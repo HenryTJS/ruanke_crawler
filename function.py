@@ -11,7 +11,7 @@ import json
 def convert(inp):
     try:
         inp = int(inp)
-        if inp >= 0 and inp <= 6:
+        if 0 <= inp <= 6:
             return 1
         elif inp == 7:
             return 2
@@ -148,7 +148,7 @@ def newreplace2(text,datalist):
                 a = functionlist.index(datalist[i][key])
                 datalist[i][key] = outputlist[a]
             elif type(datalist[i][key]) == list:
-                if datalist[i][key] != []:
+                if datalist[i][key]:
                     for item in range(0,len(datalist[i][key])):
                         if datalist[i][key][item] in functionlist:
                             a = functionlist.index(datalist[i][key][item])

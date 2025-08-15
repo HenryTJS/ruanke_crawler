@@ -11,6 +11,11 @@ def main():
     text = jsresponse.text
     univ = re.findall(finduniv,text)[0]
     univdata = univdata2(univ,text)
+    univdata["办学层次"] = univdata["办学层次"].replace({
+        "10": "普通本科",
+        "15": "职业本科",
+        "20": "高职（专科）"
+    })
     file_path = '中国大学表.xlsx'
     univdata.to_excel(file_path,index=False)
     print(f"数据已成功保存到{file_path}文件中。")
