@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中国大学数据大屏</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #0c2461, #1e3799, #4a69bd);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .dashboard-header {
+            text-align: center;
+            padding: 20px 0;
+            margin-bottom: 20px;
+        }
+        .dashboard-title {
+            font-size: 36px;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #ff9a9e, #fad0c4);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .dashboard-subtitle {
+            font-size: 18px;
+            color: #a4b0be;
+            margin-bottom: 20px;
+        }
+        .overview-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: stretch;
+            margin-bottom: 30px;
+            width: 100%;
+            gap: 20px;
+        }
+        .overview-item {
+            flex: 1;
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 24px 0;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .overview-title {
+            font-size: 18px;
+            color: #ffd700;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+        .overview-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 8px #1e3799;
+        }
+        .filters-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        .filter-section {
+            margin-bottom: 25px;
+        }
+        .filter-title {
+            font-size: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        .filter-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .filter-option {
+            padding: 8px 20px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 14px;
+        }
+        .filter-option:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-3px);
+        }
+        .filter-option.selected {
+            background: linear-gradient(45deg, #3498db, #8e44ad);
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+            border-color: transparent;
+        }
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+        .chart-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            transition: all 0.3s ease;
+        }
+        .chart-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+        }
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .chart-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #74b9ff;
+        }
+        .chart-total {
+            background: rgba(116, 185, 255, 0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .chart-content {
+            height: 500px;
+        }
+        .btn-apply {
+            display: block;
+            width: 200px;
+            margin: 20px auto 0;
+            padding: 12px 25px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+        }
+        .btn-apply:hover {
+            background: #217dbb;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.6);
+        }
+        .btn-apply:active {
+            transform: translateY(1px);
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #a4b0be;
+            font-size: 14px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        @media (max-width: 1000px) {
+            .dashboard-container {
+                grid-template-columns: 1fr !important;
+            }
+            .chart-container {
+                width: 100%;
+                min-width: 0;
+            }
+            .chart-content {
+                width: 100% !important;
+                height: 400px;
+                min-width: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-header">
+        <h1 class="dashboard-title">中国大学数据可视化分析平台</h1>
+        <p class="dashboard-subtitle">多维度分析中国高等院校分布情况</p>
+    </div>
+    <!-- 在标题下方、筛选器上方添加总览数据区 -->
+    <div class="overview-container">
+        <div class="overview-item">
+            <div class="overview-title">院校总数</div>
+            <div class="overview-value" id="overview-total">0</div>
+        </div>
+        <div class="overview-item">
+            <div class="overview-title">普通本科数量</div>
+            <div class="overview-value" id="overview-benke">0</div>
+        </div>
+        <div class="overview-item">
+            <div class="overview-title">985数量</div>
+            <div class="overview-value" id="overview-985">0</div>
+        </div>
+        <div class="overview-item">
+            <div class="overview-title">211数量</div>
+            <div class="overview-value" id="overview-211">0</div>
+        </div>
+        <div class="overview-item">
+            <div class="overview-title">双一流数量</div>
+            <div class="overview-value" id="overview-doubletop">0</div>
+        </div>
+    </div>
+    <div class="filters-container">
+        <div class="filter-section">
+            <h3 class="filter-title">
+                <span>📍</span> 所在省份
+            </h3>
+            <div class="filter-options" id="province-options"></div>
+        </div>
+        <div class="filter-section">
+            <h3 class="filter-title">
+                <span>✨</span> 院校特性
+            </h3>
+            <div class="filter-options" id="property-options"></div>
+        </div>
+        <div class="filter-section">
+            <h3 class="filter-title">
+                <span>🏛️</span> 院校类型
+            </h3>
+            <div class="filter-options" id="type-options"></div>
+        </div>
+        <button class="btn-apply" id="apply-filters">应用筛选条件</button>
+    </div>
+    <div class="dashboard-container">
+        <div class="chart-container">
+            <div class="chart-header">
+                <h2 class="chart-title">院校类型分布</h2>
+                <div class="chart-total">类型总数: <span id="type-count">0</span></div>
+            </div>
+            <div class="chart-content" id="chart-pie"></div>
+        </div>
+        <div class="chart-container">
+            <div class="chart-header">
+                <h2 class="chart-title">省份院校数量分布</h2>
+                <div class="chart-total">省份数量: <span id="province-count">0</span></div>
+            </div>
+            <div class="chart-content" id="chart-bar"></div>
+        </div>
+    </div>
+    <div class="footer">
+        <p>中国高等教育数据分析平台 © 2025 | 数据可视化大屏</p>
+    </div>
+    <script>
+        let filterOptions = {
+            province: [],
+            property: [],
+            type: []
+        };
+        let selectedFilters = {
+            province: [],
+            property: [],
+            type: []
+        };
+        const pieChartDom = document.getElementById('chart-pie');
+        const barChartDom = document.getElementById('chart-bar');
+        const pieChart = echarts.init(pieChartDom);
+        const barChart = echarts.init(barChartDom);
+        const pieOption = {
+            tooltip: {
+                trigger: 'item',
+                formatter: '{b}: {c}所 ({d}%)'
+            },
+            legend: {
+                orient: 'vertical',
+                right: 10,
+                top: 'center',
+                textStyle: {
+                    color: '#fff'
+                }
+            },
+            series: [{
+                name: '院校类型分布',
+                type: 'pie',
+                radius: ['20%', '85%'],
+                avoidLabelOverlap: false,
+                itemStyle: {
+                    borderRadius: 10,
+                    borderColor: '#0c2461',
+                    borderWidth: 2
+                },
+                label: {
+                    show: true,
+                    formatter: '{b}: {c}所',
+                    color: '#fff'
+                },
+                emphasis: {
+                    label: {
+                        show: true,
+                        fontSize: '16',
+                        fontWeight: 'bold'
+                    },
+                    itemStyle: {
+                        shadowBlur: 10,
+                        shadowOffsetX: 0,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                    }
+                },
+                labelLine: {
+                    show: true
+                },
+                data: []
+            }],
+            backgroundColor: 'transparent'
+        };
+        const barOption = {
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'shadow'
+                },
+                formatter: '{b}: {c}所'
+            },
+            grid: {
+                left: '2%',
+                right: '2%',
+                bottom: '5%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'category',
+                data: [],
+                axisLine: {
+                    lineStyle: {
+                        color: '#fff'
+                    }
+                },
+                axisLabel: {
+                    color: '#fff',
+                    rotate: 45
+                }
+            },
+            yAxis: {
+                type: 'value',
+                axisLine: {
+                    lineStyle: {
+                        color: '#fff'
+                    }
+                },
+                axisLabel: {
+                    color: '#fff'
+                }
+            },
+            series: [{
+                name: '院校数量',
+                type: 'bar',
+                data: [],
+                barMaxWidth: 50,
+                itemStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: '#3498db' },
+                        { offset: 1, color: '#8e44ad' }
+                    ])
+                },
+                label: {
+                    show: true,
+                    position: 'top',
+                    color: '#fff'
+                }
+            }],
+            backgroundColor: 'transparent'
+        };
+        pieChart.setOption(pieOption);
+        barChart.setOption(barOption);
+        window.addEventListener('resize', function() {
+            pieChart.resize();
+            barChart.resize();
+        });
+        function fetchFilterOptions() {
+            fetch('/get_options')
+                .then(response => response.json())
+                .then(data => {
+                    filterOptions = {
+                        province: data.province,
+                        property: data.property,
+                        type: data.type
+                    };
+                    assignUniqueColors(
+                        filterOptions.type,
+                        filterOptions.province,
+                        filterOptions.property
+                    );
+                    renderFilterOptions();
+                });
+        }
+        function renderFilterOptions() {
+            renderOptions('province', '省份');
+            renderOptions('property', '院校特性');
+            renderOptions('type', '院校类型');
+        }
+        function renderOptions(filterType, placeholder) {
+            const container = document.getElementById(`${filterType}-options`);
+            container.innerHTML = '';
+            const allOption = document.createElement('div');
+            allOption.className = `filter-option${selectedFilters[filterType].length === 0 ? ' selected' : ''}`;
+            allOption.innerText = `全部${placeholder}`;
+            allOption.onclick = () => {
+                selectedFilters[filterType] = selectedFilters[filterType].length === 0 ? [...filterOptions[filterType]] : [];
+                renderOptions(filterType, placeholder);
+            };
+            allOption.style.background = selectedFilters[filterType].length === 0 ? '#636e72' : 'rgba(255,255,255,0.15)';
+            container.appendChild(allOption);
+
+            filterOptions[filterType].forEach(option => {
+                const optionElem = document.createElement('div');
+                const selected = selectedFilters[filterType].includes(option);
+                optionElem.className = `filter-option${selected ? ' selected' : ''}`;
+                optionElem.innerText = option;
+                let color = '#fff';
+                if (filterType === 'type') color = typeColorMap[option];
+                if (filterType === 'province') color = provinceColorMap[option];
+                if (filterType === 'property') color = propertyColorMap[option];
+                optionElem.style.background = selected ? color : 'rgba(255,255,255,0.15)';
+                optionElem.style.color = selected ? '#fff' : '#222';
+                optionElem.onclick = () => {
+                    if (selected) {
+                        selectedFilters[filterType] = selectedFilters[filterType].filter(x => x !== option);
+                    } else {
+                        selectedFilters[filterType].push(option);
+                    }
+                    renderOptions(filterType, placeholder);
+                };
+                container.appendChild(optionElem);
+            });
+        }
+        function toggleOption(filterType, option) {
+            const index = selectedFilters[filterType].indexOf(option);
+            if (index === -1) {
+                selectedFilters[filterType].push(option);
+            } else {
+                selectedFilters[filterType].splice(index, 1);
+            }
+            renderOptions(filterType, getPlaceholder(filterType));
+        }
+        function toggleAllOptions(filterType) {
+            if (selectedFilters[filterType].length === 0) {
+                selectedFilters[filterType] = [...filterOptions[filterType]];
+            } else {
+                selectedFilters[filterType] = [];
+            }
+            renderOptions(filterType, getPlaceholder(filterType));
+        }
+        function getPlaceholder(filterType) {
+            switch(filterType) {
+                case 'province': return '省份';
+                case 'property': return '院校特性';
+                case 'type': return '院校类型';
+                default: return '';
+            }
+        }
+        function fetchOverviewData() {
+            fetch('/get_overview', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    province: selectedFilters.province,
+                    property: selectedFilters.property,
+                    type: selectedFilters.type
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('overview-total').textContent = data.total;
+                document.getElementById('overview-benke').textContent = data.benke;
+                document.getElementById('overview-985').textContent = data['985'];
+                document.getElementById('overview-211').textContent = data['211'];
+                document.getElementById('overview-doubletop').textContent = data.doubletop;
+            });
+        }
+        document.getElementById('apply-filters').addEventListener('click', function() {
+            fetchChartData();
+            fetchOverviewData();
+        });
+        function fetchChartData() {
+            const btn = document.getElementById('apply-filters');
+            btn.disabled = true;
+            btn.textContent = '加载中...';
+            fetch('/get_chart_data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    province: selectedFilters.province,
+                    property: selectedFilters.property,
+                    type: selectedFilters.type
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                updatePieChart(data.chart_data);
+                updateBarChart(data.bar_data);
+                document.getElementById('type-count').textContent = data.chart_data.length;
+                document.getElementById('province-count').textContent = data.bar_data.length;
+                btn.textContent = '应用成功!';
+                setTimeout(() => {
+                    btn.textContent = '应用筛选条件';
+                    btn.disabled = false;
+                }, 1000);
+            });
+        }
+        function updatePieChart(data) {
+            pieOption.series[0].data = data.map(item => ({
+                ...item,
+                itemStyle: { color: typeColorMap[item.name] }
+            }));
+            pieOption.color = filterOptions.type.map(t => typeColorMap[t]);
+            pieChart.setOption(pieOption);
+        }
+        function updateBarChart(data) {
+            const provinces = data.map(item => item.name);
+            const counts = data.map(item => item.value);
+            barOption.xAxis.data = provinces;
+            barOption.series[0].data = counts.map((v, i) => ({
+                value: v,
+                itemStyle: { color: provinceColorMap[provinces[i]] }
+            }));
+            barChart.setOption(barOption);
+        }
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+        function generateDistinctColors(total) {
+            const colors = [];
+            const saturation = 70 + Math.random() * 20;
+            const lightness = 50 + Math.random() * 10;
+            for (let i = 0; i < total; i++) {
+                const hue = Math.floor((360 / total) * i + Math.random() * 10) % 360;
+                colors.push(`hsl(${hue},${saturation}%,${lightness}%)`);
+            }
+            // 随机打乱
+            for (let i = colors.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [colors[i], colors[j]] = [colors[j], colors[i]];
+            }
+            return colors;
+        }
+        function assignUniqueColors(typeList, provinceList, propertyList) {
+            const colorPool = generateDistinctColors(typeList.length + provinceList.length + propertyList.length);
+            typeColorMap = Object.fromEntries(typeList.map((t, i) => [t, colorPool[i]]));
+            provinceColorMap = Object.fromEntries(provinceList.map((p, i) => [p, colorPool[typeList.length + i]]));
+            propertyColorMap = Object.fromEntries(propertyList.map((f, i) => [f, colorPool[typeList.length + provinceList.length + i]]));
+        }
+        let typeColorMap = {};
+        let provinceColorMap = {};
+        let propertyColorMap = {};
+        window.addEventListener('DOMContentLoaded', function() {
+            fetchFilterOptions();
+            setTimeout(() => {
+                fetchChartData();
+                fetchOverviewData();
+            }, 500);
+        });
+    </script>
+</body>
+</html>
