@@ -21,7 +21,7 @@
         .dashboard-header {
             text-align: center;
             padding: 20px 0;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
         .dashboard-title {
             font-size: 36px;
@@ -56,7 +56,7 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
         .overview-title {
-            font-size: 18px;
+            font-size: 20px;
             color: #ffd700;
             margin-bottom: 10px;
             letter-spacing: 1px;
@@ -67,54 +67,56 @@
             color: #fff;
             text-shadow: 0 0 8px #1e3799;
         }
-        .filters-container {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 20px;
+        .search-bar-container {
+            width: 100%;
+            display: flex;
+            gap: 20px;
             margin-bottom: 30px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.18);
         }
-        .filter-section {
-            margin-bottom: 25px;
-        }
-        .filter-title {
-            font-size: 20px;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-        }
-        .filter-options {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-        .filter-option {
+        .search-select {
+            flex: 1;
             padding: 8px 20px;
-            background: rgba(255, 255, 255, 0.15);
             border-radius: 30px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            background: rgba(255,255,255,0.15);
+            color: #222;
+            outline: none;
+            min-width: 0;
+        }
+        .search-select:focus {
+            border-color: #3498db;
+        }
+        .btn-apply {
+            display: block;
+            width: 200px;
+            margin: 20px auto 0;
+            padding: 12px 25px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: bold;
             cursor: pointer;
             transition: all 0.3s ease;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            font-size: 14px;
-        }
-        .filter-option:hover {
-            background: rgba(255, 255, 255, 0.25);
-            transform: translateY(-3px);
-        }
-        .filter-option.selected {
-            background: linear-gradient(45deg, #3498db, #8e44ad);
             box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
-            border-color: transparent;
+        }
+        .btn-apply:hover {
+            background: #217dbb;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.6);
+        }
+        .btn-apply:active {
+            transform: translateY(1px);
         }
         .dashboard-container {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 25px;
         }
         .chart-container {
-            background: rgba(255, 255, 255, 0.05);
+            background: transparent;
             border-radius: 15px;
             padding: 20px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
@@ -145,30 +147,7 @@
             font-size: 16px;
         }
         .chart-content {
-            height: 500px;
-        }
-        .btn-apply {
-            display: block;
-            width: 200px;
-            margin: 20px auto 0;
-            padding: 12px 25px;
-            background: #3498db;
-            color: white;
-            border: none;
-            border-radius: 30px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
-        }
-        .btn-apply:hover {
-            background: #217dbb;
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.6);
-        }
-        .btn-apply:active {
-            transform: translateY(1px);
+            height: 480px;
         }
         .footer {
             text-align: center;
@@ -199,7 +178,6 @@
         <h1 class="dashboard-title">中国大学数据可视化分析平台</h1>
         <p class="dashboard-subtitle">多维度分析中国高等院校分布情况</p>
     </div>
-    <!-- 在标题下方、筛选器上方添加总览数据区 -->
     <div class="overview-container">
         <div class="overview-item">
             <div class="overview-title">院校总数</div>
@@ -222,26 +200,11 @@
             <div class="overview-value" id="overview-doubletop">0</div>
         </div>
     </div>
-    <div class="filters-container">
-        <div class="filter-section">
-            <h3 class="filter-title">
-                <span>📍</span> 所在省份
-            </h3>
-            <div class="filter-options" id="province-options"></div>
-        </div>
-        <div class="filter-section">
-            <h3 class="filter-title">
-                <span>✨</span> 院校特性
-            </h3>
-            <div class="filter-options" id="property-options"></div>
-        </div>
-        <div class="filter-section">
-            <h3 class="filter-title">
-                <span>🏛️</span> 院校类型
-            </h3>
-            <div class="filter-options" id="type-options"></div>
-        </div>
-        <button class="btn-apply" id="apply-filters">应用筛选条件</button>
+    <div class="search-bar-container" style="display: flex; gap: 20px; margin-bottom: 30px; width: 100%;">
+        <select id="search-province" class="search-select"></select>
+        <select id="search-property" class="search-select"></select>
+        <select id="search-level" class="search-select"></select>
+        <select id="search-type" class="search-select"></select>
     </div>
     <div class="dashboard-container">
         <div class="chart-container">
@@ -256,137 +219,46 @@
                 <h2 class="chart-title">省份院校数量分布</h2>
                 <div class="chart-total">省份数量: <span id="province-count">0</span></div>
             </div>
-            <div class="chart-content" id="chart-bar"></div>
+            <div class="chart-content" id="chart-treemap"></div>
+        </div>
+        <div class="chart-container">
+            <div class="chart-header">
+                <h2 class="chart-title">办学层次分布</h2>
+            </div>
+            <div class="chart-content" id="chart-level"></div>
         </div>
     </div>
     <div class="footer">
         <p>中国高等教育数据分析平台 © 2025 | 数据可视化大屏</p>
     </div>
     <script>
-        let filterOptions = {
-            province: [],
-            property: [],
-            type: []
-        };
-        let selectedFilters = {
-            province: [],
-            property: [],
-            type: []
-        };
-        const pieChartDom = document.getElementById('chart-pie');
-        const barChartDom = document.getElementById('chart-bar');
-        const pieChart = echarts.init(pieChartDom);
-        const barChart = echarts.init(barChartDom);
-        const pieOption = {
-            tooltip: {
-                trigger: 'item',
-                formatter: '{b}: {c}所 ({d}%)'
-            },
-            legend: {
-                orient: 'vertical',
-                right: 10,
-                top: 'center',
-                textStyle: {
-                    color: '#fff'
-                }
-            },
-            series: [{
-                name: '院校类型分布',
-                type: 'pie',
-                radius: ['20%', '85%'],
-                avoidLabelOverlap: false,
-                itemStyle: {
-                    borderRadius: 10,
-                    borderColor: '#0c2461',
-                    borderWidth: 2
-                },
-                label: {
-                    show: true,
-                    formatter: '{b}: {c}所',
-                    color: '#fff'
-                },
-                emphasis: {
-                    label: {
-                        show: true,
-                        fontSize: '16',
-                        fontWeight: 'bold'
-                    },
-                    itemStyle: {
-                        shadowBlur: 10,
-                        shadowOffsetX: 0,
-                        shadowColor: 'rgba(0, 0, 0, 0.5)'
-                    }
-                },
-                labelLine: {
-                    show: true
-                },
-                data: []
-            }],
-            backgroundColor: 'transparent'
-        };
-        const barOption = {
-            tooltip: {
-                trigger: 'axis',
-                axisPointer: {
-                    type: 'shadow'
-                },
-                formatter: '{b}: {c}所'
-            },
-            grid: {
-                left: '2%',
-                right: '2%',
-                bottom: '5%',
-                containLabel: true
-            },
-            xAxis: {
-                type: 'category',
-                data: [],
-                axisLine: {
-                    lineStyle: {
-                        color: '#fff'
-                    }
-                },
-                axisLabel: {
-                    color: '#fff',
-                    rotate: 45
-                }
-            },
-            yAxis: {
-                type: 'value',
-                axisLine: {
-                    lineStyle: {
-                        color: '#fff'
-                    }
-                },
-                axisLabel: {
-                    color: '#fff'
-                }
-            },
-            series: [{
-                name: '院校数量',
-                type: 'bar',
-                data: [],
-                barMaxWidth: 50,
-                itemStyle: {
-                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                        { offset: 0, color: '#3498db' },
-                        { offset: 1, color: '#8e44ad' }
-                    ])
-                },
-                label: {
-                    show: true,
-                    position: 'top',
-                    color: '#fff'
-                }
-            }],
-            backgroundColor: 'transparent'
-        };
-        pieChart.setOption(pieOption);
-        barChart.setOption(barOption);
-        window.addEventListener('resize', function() {
-            pieChart.resize();
-            barChart.resize();
-        });
+        let filterOptions = { province: [], property: [], type: [], level: [] };
+        let selectedFilters = { province: [], property: [], type: [], level: [] };
+        let typeColorMap = {}, provinceColorMap = {}, propertyColorMap = {}, levelColorMap = {};
+
+        function generateDistinctColors(total) {
+            const colors = [];
+            const saturation = 70 + Math.random() * 20;
+            const lightness = 50 + Math.random() * 10;
+            for (let i = 0; i < total; i++) {
+                const hue = Math.floor((360 / total) * i + Math.random() * 10) % 360;
+                colors.push(`hsl(${hue},${saturation}%,${lightness}%)`);
+            }
+            for (let i = colors.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [colors[i], colors[j]] = [colors[j], colors[i]];
+            }
+            return colors;
+        }
+
+        function assignUniqueColors(typeList, provinceList, propertyList, levelList) {
+            const colorPool = generateDistinctColors(typeList.length + provinceList.length + propertyList.length + levelList.length);
+            typeColorMap = Object.fromEntries(typeList.map((t, i) => [t, colorPool[i]]));
+            provinceColorMap = Object.fromEntries(provinceList.map((p, i) => [p, colorPool[typeList.length + i]]));
+            propertyColorMap = Object.fromEntries(propertyList.map((f, i) => [f, colorPool[typeList.length + provinceList.length + i]]));
+            levelColorMap = Object.fromEntries(levelList.map((l, i) => [l, colorPool[typeList.length + provinceList.length + propertyList.length + i]]));
+        }
+
         function fetchFilterOptions() {
             fetch('/get_options')
                 .then(response => response.json())
@@ -394,81 +266,47 @@
                     filterOptions = {
                         province: data.province,
                         property: data.property,
-                        type: data.type
+                        type: data.type,
+                        level: data.level
                     };
                     assignUniqueColors(
                         filterOptions.type,
                         filterOptions.province,
-                        filterOptions.property
+                        filterOptions.property,
+                        filterOptions.level
                     );
-                    renderFilterOptions();
+                    renderSearchSelects();
                 });
         }
-        function renderFilterOptions() {
-            renderOptions('province', '省份');
-            renderOptions('property', '院校特性');
-            renderOptions('type', '院校类型');
-        }
-        function renderOptions(filterType, placeholder) {
-            const container = document.getElementById(`${filterType}-options`);
-            container.innerHTML = '';
-            const allOption = document.createElement('div');
-            allOption.className = `filter-option${selectedFilters[filterType].length === 0 ? ' selected' : ''}`;
-            allOption.innerText = `全部${placeholder}`;
-            allOption.onclick = () => {
-                selectedFilters[filterType] = selectedFilters[filterType].length === 0 ? [...filterOptions[filterType]] : [];
-                renderOptions(filterType, placeholder);
-            };
-            allOption.style.background = selectedFilters[filterType].length === 0 ? '#636e72' : 'rgba(255,255,255,0.15)';
-            container.appendChild(allOption);
 
+        function renderSearchSelects() {
+            renderSelect('province', 'search-province', '全部省份');
+            renderSelect('property', 'search-property', '全部院校特性');
+            renderSelect('level', 'search-level', '全部办学层次');
+            renderSelect('type', 'search-type', '全部院校类型');
+        }
+
+        function renderSelect(filterType, selectId, allText) {
+            const select = document.getElementById(selectId);
+            select.innerHTML = '';
+            const allOption = document.createElement('option');
+            allOption.value = '';
+            allOption.textContent = allText;
+            select.appendChild(allOption);
             filterOptions[filterType].forEach(option => {
-                const optionElem = document.createElement('div');
-                const selected = selectedFilters[filterType].includes(option);
-                optionElem.className = `filter-option${selected ? ' selected' : ''}`;
-                optionElem.innerText = option;
-                let color = '#fff';
-                if (filterType === 'type') color = typeColorMap[option];
-                if (filterType === 'province') color = provinceColorMap[option];
-                if (filterType === 'property') color = propertyColorMap[option];
-                optionElem.style.background = selected ? color : 'rgba(255,255,255,0.15)';
-                optionElem.style.color = selected ? '#fff' : '#222';
-                optionElem.onclick = () => {
-                    if (selected) {
-                        selectedFilters[filterType] = selectedFilters[filterType].filter(x => x !== option);
-                    } else {
-                        selectedFilters[filterType].push(option);
-                    }
-                    renderOptions(filterType, placeholder);
-                };
-                container.appendChild(optionElem);
+                const opt = document.createElement('option');
+                opt.value = option;
+                opt.textContent = option;
+                select.appendChild(opt);
             });
+            select.value = selectedFilters[filterType][0] || '';
+            select.onchange = function() {
+                selectedFilters[filterType] = select.value ? [select.value] : [];
+                fetchChartData();
+                fetchOverviewData();
+            };
         }
-        function toggleOption(filterType, option) {
-            const index = selectedFilters[filterType].indexOf(option);
-            if (index === -1) {
-                selectedFilters[filterType].push(option);
-            } else {
-                selectedFilters[filterType].splice(index, 1);
-            }
-            renderOptions(filterType, getPlaceholder(filterType));
-        }
-        function toggleAllOptions(filterType) {
-            if (selectedFilters[filterType].length === 0) {
-                selectedFilters[filterType] = [...filterOptions[filterType]];
-            } else {
-                selectedFilters[filterType] = [];
-            }
-            renderOptions(filterType, getPlaceholder(filterType));
-        }
-        function getPlaceholder(filterType) {
-            switch(filterType) {
-                case 'province': return '省份';
-                case 'property': return '院校特性';
-                case 'type': return '院校类型';
-                default: return '';
-            }
-        }
+
         function fetchOverviewData() {
             fetch('/get_overview', {
                 method: 'POST',
@@ -476,7 +314,8 @@
                 body: JSON.stringify({
                     province: selectedFilters.province,
                     property: selectedFilters.property,
-                    type: selectedFilters.type
+                    type: selectedFilters.type,
+                    level: selectedFilters.level
                 })
             })
             .then(res => res.json())
@@ -488,38 +327,29 @@
                 document.getElementById('overview-doubletop').textContent = data.doubletop;
             });
         }
-        document.getElementById('apply-filters').addEventListener('click', function() {
-            fetchChartData();
-            fetchOverviewData();
-        });
-        function fetchChartData() {
-            const btn = document.getElementById('apply-filters');
-            btn.disabled = true;
-            btn.textContent = '加载中...';
-            fetch('/get_chart_data', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
+
+        // 饼图
+        const pieChart = echarts.init(document.getElementById('chart-pie'));
+        const pieOption = {
+            tooltip: { trigger: 'item', formatter: '{b}: {c}所 ({d}%)' },
+            series: [{
+                name: '院校类型分布',
+                type: 'pie',
+                radius: ['20%', '80%'],
+                roseType: 'area',
+                avoidLabelOverlap: false,
+                itemStyle: { borderRadius: 10, borderColor: '#0c2461', borderWidth: 2 },
+                label: { show: true, formatter: '{b}: {c}所', color: '#fff' },
+                emphasis: {
+                    label: { show: true, fontSize: '16', fontWeight: 'bold' },
+                    itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' }
                 },
-                body: JSON.stringify({
-                    province: selectedFilters.province,
-                    property: selectedFilters.property,
-                    type: selectedFilters.type
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                updatePieChart(data.chart_data);
-                updateBarChart(data.bar_data);
-                document.getElementById('type-count').textContent = data.chart_data.length;
-                document.getElementById('province-count').textContent = data.bar_data.length;
-                btn.textContent = '应用成功!';
-                setTimeout(() => {
-                    btn.textContent = '应用筛选条件';
-                    btn.disabled = false;
-                }, 1000);
-            });
-        }
+                labelLine: { show: true },
+                data: []
+            }],
+            backgroundColor: 'transparent'
+        };
+
         function updatePieChart(data) {
             pieOption.series[0].data = data.map(item => ({
                 ...item,
@@ -528,47 +358,104 @@
             pieOption.color = filterOptions.type.map(t => typeColorMap[t]);
             pieChart.setOption(pieOption);
         }
-        function updateBarChart(data) {
-            const provinces = data.map(item => item.name);
-            const counts = data.map(item => item.value);
-            barOption.xAxis.data = provinces;
-            barOption.series[0].data = counts.map((v, i) => ({
-                value: v,
-                itemStyle: { color: provinceColorMap[provinces[i]] }
+
+        // 矩形树图
+        const treemapChart = echarts.init(document.getElementById('chart-treemap'));
+        const treemapOption = {
+            tooltip: { formatter: '{b}: {c}所' },
+            series: [{
+                type: 'treemap',
+                roam: false,
+                nodeClick: false,
+                label: {
+                    show: true,
+                    formatter: '{b}\n{c}所',
+                    color: '#fff',
+                    fontSize: 16,
+                    fontWeight: 'bold'
+                },
+                itemStyle: { gapWidth: 1 },
+                upperLabel: { show: false },
+                breadcrumb: { show: false },
+                data: []
+            }],
+            backgroundColor: 'transparent'
+        };
+
+        function updateTreemapChart(data) {
+            treemapOption.series[0].data = data.map(item => ({
+                name: item.name,
+                value: item.value,
+                itemStyle: { color: provinceColorMap[item.name] }
             }));
-            barChart.setOption(barOption);
+            treemapChart.setOption(treemapOption);
         }
-        function shuffleArray(arr) {
-            for (let i = arr.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [arr[i], arr[j]] = [arr[j], arr[i]];
-            }
-            return arr;
+
+        // 办学层次柱状图
+        const levelChart = echarts.init(document.getElementById('chart-level'));
+        const levelBarOption = {
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            xAxis: {
+                type: 'category',
+                data: ["普通本科", "职业本科", "高职（专科）"],
+                axisLabel: { color: '#fff', fontWeight: 'bold' }
+            },
+            yAxis: { type: 'value', axisLabel: { color: '#fff' } },
+            series: [{
+                name: '办学层次分布',
+                type: 'bar',
+                barWidth: 50,
+                itemStyle: { borderRadius: [8, 8, 0, 0] },
+                label: {
+                    show: true,
+                    position: 'top',
+                    color: '#fff',
+                    fontWeight: 'bold',
+                    formatter: '{c}'
+                },
+                data: []
+            }],
+            backgroundColor: 'transparent'
+        };
+
+        function updateLevelBarChart(data) {
+            levelBarOption.series[0].data = data.map(item => ({
+                value: item.value,
+                itemStyle: { color: levelColorMap[item.name] }
+            }));
+            levelChart.setOption(levelBarOption);
         }
-        function generateDistinctColors(total) {
-            const colors = [];
-            const saturation = 70 + Math.random() * 20;
-            const lightness = 50 + Math.random() * 10;
-            for (let i = 0; i < total; i++) {
-                const hue = Math.floor((360 / total) * i + Math.random() * 10) % 360;
-                colors.push(`hsl(${hue},${saturation}%,${lightness}%)`);
-            }
-            // 随机打乱
-            for (let i = colors.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [colors[i], colors[j]] = [colors[j], colors[i]];
-            }
-            return colors;
+
+        function fetchChartData() {
+            fetch('/get_chart_data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    province: selectedFilters.province,
+                    property: selectedFilters.property,
+                    type: selectedFilters.type,
+                    level: selectedFilters.level
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                updatePieChart(data.chart_data);
+                updateTreemapChart(data.bar_data);
+                updateLevelBarChart(data.level_data || []);
+                document.getElementById('type-count').textContent = data.chart_data.length;
+                document.getElementById('province-count').textContent = data.bar_data.length;
+            })
+            .catch(error => {
+                console.error('获取图表数据失败:', error);
+            });
         }
-        function assignUniqueColors(typeList, provinceList, propertyList) {
-            const colorPool = generateDistinctColors(typeList.length + provinceList.length + propertyList.length);
-            typeColorMap = Object.fromEntries(typeList.map((t, i) => [t, colorPool[i]]));
-            provinceColorMap = Object.fromEntries(provinceList.map((p, i) => [p, colorPool[typeList.length + i]]));
-            propertyColorMap = Object.fromEntries(propertyList.map((f, i) => [f, colorPool[typeList.length + provinceList.length + i]]));
-        }
-        let typeColorMap = {};
-        let provinceColorMap = {};
-        let propertyColorMap = {};
+
+        window.addEventListener('resize', () => {
+            pieChart.resize();
+            treemapChart.resize();
+            levelChart.resize();
+        });
+
         window.addEventListener('DOMContentLoaded', function() {
             fetchFilterOptions();
             setTimeout(() => {

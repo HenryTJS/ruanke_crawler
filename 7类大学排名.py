@@ -1,7 +1,7 @@
 # 7类大学排名爬取主函数程序
 
 import os
-from function import convert, newsave, newsave2
+from function import convert, newsave1, newsave2
 from data import ry
 
 def parse_years(year_input, valid_years):
@@ -30,6 +30,9 @@ def main():
     while True:
         current_dir = os.path.dirname(os.path.abspath(__file__))
         i = input('请输入你要爬取的表格（按7退出）：')
+        # 输入0为中国大学排名，输入1为中国最好学科排名，输入2为中国大学专业排名，输入3为中国高职院校排名
+        # 输入4为世界大学学术排名，输入5为世界一流学科排名，输入6为全球体育类院系学术排名
+
         if convert(i) == 1:
             i = int(i)
             valid_years = ry[i]
@@ -39,7 +42,7 @@ def main():
                 print("没有有效年份，返回主菜单。")
                 continue
             if i != 4 and i != 6:
-                newsave(i, current_dir, years)
+                newsave1(i, current_dir, years)
             else:
                 newsave2(i, current_dir, years)
         elif convert(i) == 0:

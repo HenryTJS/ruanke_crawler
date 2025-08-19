@@ -38,13 +38,13 @@ findoutput = re.compile(r'\[]}}\((.*?)\)\)\)')
 finduniv = re.compile(r'\{(.*?);return')
 
 dropcolumn = [
-    ['univUp', 'univLogo', 'liked', 'inbound', 'univLikeCount', 'univTags', 'indData', 'univNameRemark', 'univNameEn', 'rankChange'],
+    ['univUp', 'univLogo', 'liked', 'inbound', 'univLikeCount', 'univTags', 'indData', 'univNameRemark', 'univNameEn', 'rankChange', 'rankOverall'],
     ['univCode', 'univUp', 'univLogo', 'liked', 'inbound', 'univLikeCount', 'doctoralDegree', 'focusSubj', 'contrastRanking', 'rankPctTop'],
-    ['univCode', 'univUp', 'univLogo', 'city', 'liked', 'inbound', 'univLikeCount', 'univTags', 'indGrades'],
-    ['univUp', 'isVocational', 'univLogo', 'liked', 'univLikeCount', 'univTags', 'indData', 'outdated', 'univNameEn'],
+    ['univCode', 'univUp', 'univLogo', 'city', 'liked', 'inbound', 'univLikeCount', 'univTags', 'indGrades', 'province'],
+    ['univUp', 'isVocational', 'univLogo', 'liked', 'univLikeCount', 'univTags', 'indData', 'outdated', 'univNameEn', 'rankOverall'],
     ['univUp', 'univLogo', 'regionLogo', 'indData'],
-    ['univUp', 'univUpEn', 'univLogo', 'inbound', 'univLikeCount', 'liked', 'indData'],
-    ['univUp', 'unitNameEn', 'univLogo', 'regionLogo', 'indData'],
+    ['univUp', 'univUpEn', 'univLogo', 'inbound', 'univLikeCount', 'liked', 'indData', 'regionRanking', 'univCode'],
+    ['univUp', 'unitNameEn', 'univLogo', 'regionLogo', 'indData', 'regionRanking'],
     ['univEnv', 'logo', 'up', 'isVocational', 'rankBcur', 'liked', 'inbound', 'cateCode', 'univLikeCount', 'charCode', 'level'],
 ]
 
@@ -63,7 +63,6 @@ replacement = [
     {'province': '所在省份'},
     {'score': '得分'},
     {'ranking': '排名'},
-    {'rankOverall': '总榜排名'},
     {'grade': '评级'},
     {'rankPctTopNum': '层次'},
     {'univNameEn': '英文名称'},

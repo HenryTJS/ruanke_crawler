@@ -122,7 +122,7 @@ def univdata2(univ, text):
     univdata = newreplace2(text, univdata)
     return remove(7, univdata)
 
-def newsave(i, current_dir, years=None):
+def newsave1(i, current_dir, years=None):
     years = years if years is not None else ry[i]
     for j in years:
         path_url = f'https://www.shanghairanking.cn/_nuxt/static/{number}/rankings/{rv[i]}/{j}/payload.js'
