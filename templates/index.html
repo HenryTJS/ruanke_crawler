@@ -73,23 +73,45 @@
             gap: 20px;
             margin-bottom: 30px;
         }
-        .search-select {
+        .searchable-select {
+            position: relative;
             flex: 1;
+        }
+        .searchable-select input {
+            width: 100%;
             padding: 8px 20px;
             border-radius: 30px;
             font-size: 16px;
             border: 1px solid #ccc;
             background: rgba(255,255,255,0.15);
-            color: #000;
+            color: #fff;
             outline: none;
-            min-width: 0;
         }
-        .search-select option {
-            color: #000;
+        .searchable-select input::placeholder {
+            color: #ccc;
+        }
+        .searchable-select .dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            max-height: 300px;
+            overflow-y: auto;
             background: rgba(255,255,255,0.9);
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            margin-top: 5px;
+            z-index: 1000;
+            display: none;
         }
-        .search-select:focus {
-            border-color: #3498db;
+        .searchable-select .dropdown div {
+            padding: 8px 15px;
+            color: #000;
+            cursor: pointer;
+        }
+        .searchable-select .dropdown div:hover {
+            background-color: #74b9ff;
+            color: #fff;
         }
         .dashboard-container {
             display: grid;
@@ -230,46 +252,6 @@
             font-weight: bold;
             color: #ffd700;
         }
-        .searchable-select {
-            position: relative;
-            flex: 1;
-        }
-        .searchable-select input {
-            width: 100%;
-            padding: 8px 20px;
-            border-radius: 30px;
-            font-size: 16px;
-            border: 1px solid #ccc;
-            background: rgba(255,255,255,0.15);
-            color: #fff;
-            outline: none;
-        }
-        .searchable-select input::placeholder {
-            color: #ccc;
-        }
-        .searchable-select .dropdown {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            max-height: 300px;
-            overflow-y: auto;
-            background: rgba(255,255,255,0.9);
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            margin-top: 5px;
-            z-index: 1000;
-            display: none;
-        }
-        .searchable-select .dropdown div {
-            padding: 8px 15px;
-            color: #000;
-            cursor: pointer;
-        }
-        .searchable-select .dropdown div:hover {
-            background-color: #74b9ff;
-            color: #fff;
-        }
         @media (max-width: 1000px) {
             .dashboard-container {
                 grid-template-columns: 1fr !important;
@@ -404,687 +386,657 @@
         <p>中国高等教育数据分析平台 © 2025 | 数据可视化大屏</p>
     </div>
     <script>
-        let filterOptions = { province: [], property: [], type: [], level: [] };
-        let selectedFilters = { province: [], property: [], type: [], level: [] };
-        let typeColorMap = {}, provinceColorMap = {}, propertyColorMap = {}, levelColorMap = {};
-        let universitiesList = [];
-
-        function generateDistinctColors(total) {
-            const colors = [];
-            const saturation = 70 + Math.random() * 20;
-            const lightness = 50 + Math.random() * 10;
-            for (let i = 0; i < total; i++) {
-                const hue = Math.floor((360 / total) * i + Math.random() * 10) % 360;
-                colors.push(`hsl(${hue},${saturation}%,${lightness}%)`);
-            }
-            for (let i = colors.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [colors[i], colors[j]] = [colors[j], colors[i]];
-            }
-            return colors;
-        }
-
-        function assignUniqueColors(typeList, provinceList, propertyList, levelList) {
-            const colorPool = generateDistinctColors(typeList.length + provinceList.length + propertyList.length + levelList.length);
-            typeColorMap = Object.fromEntries(typeList.map((t, i) => [t, colorPool[i]]));
-            provinceColorMap = Object.fromEntries(provinceList.map((p, i) => [p, colorPool[typeList.length + i]]));
-            propertyColorMap = Object.fromEntries(propertyList.map((f, i) => [f, colorPool[typeList.length + provinceList.length + i]]));
-            levelColorMap = Object.fromEntries(levelList.map((l, i) => [l, colorPool[typeList.length + provinceList.length + propertyList.length + i]]));
-        }
-
-        function fetchFilterOptions() {
-            fetch('/get_options')
-                .then(response => response.json())
-                .then(data => {
-                    filterOptions = {
-                        province: data.province,
-                        property: data.property,
-                        type: data.type,
-                        level: data.level
-                    };
-                    assignUniqueColors(
-                        filterOptions.type,
-                        filterOptions.province,
-                        filterOptions.property,
-                        filterOptions.level
-                    );
-                    renderSearchSelects();
-                });
-        }
-
-        // 初始化可搜索的下拉框
-        function initSearchableSelect(selectId, inputId, dropdownId, placeholder, filterType) {
-            const input = document.getElementById(inputId);
-            const select = document.getElementById(selectId);
-            const dropdown = document.getElementById(dropdownId);
-            
-            // 渲染下拉选项
-            function renderOptions(filterText = '') {
-                dropdown.innerHTML = '';
-                const options = filterOptions[filterType] || [];
-                
-                const filteredOptions = options.filter(option => 
-                    option.toLowerCase().includes(filterText.toLowerCase())
-                );
-                
-                if (filteredOptions.length === 0) {
-                    const noResult = document.createElement('div');
-                    noResult.textContent = '无匹配结果';
-                    dropdown.appendChild(noResult);
-                    return;
-                }
-                
-                filteredOptions.forEach(option => {
-                    const div = document.createElement('div');
-                    div.textContent = option;
-                    div.onclick = () => {
-                        input.value = option;
-                        select.value = option;
-                        dropdown.style.display = 'none';
-                        
-                        // 触发筛选器变化
-                        selectedFilters[filterType] = [option];
-                        fetchChartData();
-                        fetchOverviewData();
-                        fetchUniversitiesForSelect();
-                    };
-                    dropdown.appendChild(div);
-                });
-            }
-            
-            // 输入框事件
-            input.addEventListener('focus', () => {
-                if (dropdown.children.length === 0) {
-                    renderOptions();
-                }
-                dropdown.style.display = 'block';
-            });
-            
-            input.addEventListener('input', (e) => {
-                renderOptions(e.target.value);
-            });
-            
-            input.addEventListener('blur', () => {
-                setTimeout(() => {
-                    dropdown.style.display = 'none';
-                }, 200);
-            });
-            
-            // 初始化下拉选项
-            renderOptions();
-        }
-
-        function renderSearchSelects() {
-            initSearchableSelect('search-province', 'search-province-input', 'search-province-dropdown', '搜索省份...', 'province');
-            initSearchableSelect('search-property', 'search-property-input', 'search-property-dropdown', '搜索院校特性...', 'property');
-            initSearchableSelect('search-level', 'search-level-input', 'search-level-dropdown', '搜索办学层次...', 'level');
-            initSearchableSelect('search-type', 'search-type-input', 'search-type-dropdown', '搜索院校类型...', 'type');
-        }
-
-        // 获取符合筛选条件的大学列表，用于下拉选择
-        function fetchUniversitiesForSelect() {
-            fetch('/get_universities_list', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    province: selectedFilters.province,
-                    property: selectedFilters.property,
-                    type: selectedFilters.type,
-                    level: selectedFilters.level
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                universitiesList = data.universities || [];
-                initUniversitySearch();
-            })
-            .catch(error => {
-                console.error('获取大学列表失败:', error);
-            });
-        }
-
-        // 初始化大学搜索下拉框
-        function initUniversitySearch() {
-            const input = document.getElementById('university-search-input');
-            const select = document.getElementById('university-select');
-            const dropdown = document.getElementById('university-search-dropdown');
-            
-            // 清空现有选项
-            select.innerHTML = '<option value="">请选择大学</option>';
-            
-            if (universitiesList.length === 0) {
-                return;
-            }
-            
-            // 按名称排序
-            const sortedUniversities = [...universitiesList].sort((a, b) => a.name.localeCompare(b.name));
-            
-            // 添加到隐藏的select中
-            sortedUniversities.forEach(university => {
-                const option = document.createElement('option');
-                option.value = university.name;
-                option.textContent = university.name;
-                select.appendChild(option);
-            });
-            
-            // 渲染下拉选项
-            function renderOptions(filterText = '') {
-                dropdown.innerHTML = '';
-                
-                const filteredUniversities = sortedUniversities.filter(uni => 
-                    uni.name.toLowerCase().includes(filterText.toLowerCase())
-                );
-                
-                if (filteredUniversities.length === 0) {
-                    const noResult = document.createElement('div');
-                    noResult.textContent = '无匹配结果';
-                    dropdown.appendChild(noResult);
-                    return;
-                }
-                
-                filteredUniversities.forEach(uni => {
-                    const div = document.createElement('div');
-                    div.textContent = uni.name;
-                    div.onclick = () => {
-                        input.value = uni.name;
-                        select.value = uni.name;
-                        dropdown.style.display = 'none';
-                        
-                        // 触发大学选择变化
-                        fetchUniversityRank(uni.name);
-                        fetchDisciplineRank(uni.name);
-                    };
-                    dropdown.appendChild(div);
-                });
-            }
-            
-            // 输入框事件
-            input.addEventListener('focus', () => {
-                if (dropdown.children.length === 0) {
-                    renderOptions();
-                }
-                dropdown.style.display = 'block';
-            });
-            
-            input.addEventListener('input', (e) => {
-                renderOptions(e.target.value);
-            });
-            
-            input.addEventListener('blur', () => {
-                setTimeout(() => {
-                    dropdown.style.display = 'none';
-                }, 200);
-            });
-            
-            // 初始化下拉选项
-            renderOptions();
-        }
-
-        // 修改fetchUniversityRank函数，在最后添加对专业排名的获取
-        function fetchUniversityRank(universityName) {
-            fetch('/get_university_rank', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    university_name: universityName
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                displayUniversityRank(data);
-                // 新增：获取专业排名
-                fetchMajorRank(universityName);
-            })
-            .catch(error => {
-                console.error('获取大学排名失败:', error);
-                document.getElementById('university-rank-detail').style.display = 'block';
-                document.getElementById('rank-info-container').innerHTML = 
-                    '<div class="rank-info-item">获取排名信息失败</div>';
-            });
-        }
-
-        // 显示大学排名信息
-        function displayUniversityRank(rankData) {
-            const container = document.getElementById('rank-info-container');
-            const detailContainer = document.getElementById('university-rank-detail');
-            
-            if (!rankData || rankData.length === 0) {
-                container.innerHTML = '<div class="rank-info-item">暂无该院校排名信息</div>';
-                detailContainer.style.display = 'block';
-                return;
-            }
-            
-            let html = '';
-            rankData.forEach(item => {
-                // 使用rank_display显示原始排名值（可能包含+号）
-                const displayRank = item.rank_display || `第${item.rank}名`;
-                html += `
-                    <div class="rank-info-item">
-                        <span class="rank-info-label">${item.rank_type}:</span>
-                        <span class="rank-info-value">${displayRank}</span>
-                    </div>
-                `;
-            });
-            container.innerHTML = html;
-            detailContainer.style.display = 'block';
-        }
-
-        // 获取选定大学的学科排名信息
-        function fetchDisciplineRank(universityName) {
-            fetch('/get_university_discipline_rank', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    university_name: universityName
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                displayDisciplineRank(data);
-            })
-            .catch(error => {
-                console.error('获取学科排名失败:', error);
-                document.getElementById('discipline-rank-container').innerHTML = `
-                    <div class="empty-state">
-                        获取学科排名信息失败
-                    </div>
-                `;
-                document.getElementById('discipline-count').textContent = '0';
-            });
-        }
-
-        // 新增：获取选定大学的专业排名信息
-        function fetchMajorRank(universityName) {
-            fetch('/get_university_major_rank', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    university_name: universityName
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                displayMajorRank(data);
-            })
-            .catch(error => {
-                console.error('获取专业排名失败:', error);
-                document.getElementById('major-rank-container').innerHTML = `
-                    <div class="empty-state">
-                        获取专业排名信息失败
-                    </div>
-                `;
-                document.getElementById('major-count').textContent = '0';
-            });
-        }
-
-        // 新增：自定义专业排名排序函数
-        function customSortMajorRank(a, b) {
-            // 定义排名层次优先级
-            const rankOrder = ['A+', 'A', 'B+', 'B'];
-            
-            // 如果排名在预设顺序中，使用预设顺序
-            const getRankValue = (rank) => {
-                const index = rankOrder.indexOf(rank);
-                return index === -1 ? rankOrder.length : index;
-            };
-            
-            const valueA = getRankValue(a.rank);
-            const valueB = getRankValue(b.rank);
-            
-            // 先按排名值排序
-            if (valueA !== valueB) {
-                return valueA - valueB;
-            }
-            
-            // 如果排名值相同，则按专业名称排序
-            return a.major.localeCompare(b.major);
-        }
-
-        // 新增：显示专业排名信息
-        function displayMajorRank(majorData) {
-            const container = document.getElementById('major-rank-container');
-            const countElement = document.getElementById('major-count');
-            
-            if (!majorData || majorData.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        该院校暂无专业排名信息
-                    </div>
-                `;
-                countElement.textContent = '0';
-                return;
-            }
-            
-            // 对专业排名数据进行排序
-            const sortedData = [...majorData].sort(customSortMajorRank);
-            
-            // 更新统计数量
-            countElement.textContent = sortedData.length;
-            
-            // 创建表格HTML
-            let tableHTML = `
-                <div class="discipline-table-container">
-                    <table class="discipline-table">
-                        <thead>
-                            <tr>
-                                <th>专业名称</th>
-                                <th>排名层次</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
-            
-            sortedData.forEach(item => {
-                tableHTML += `
-                    <tr>
-                        <td>${item.major}</td>
-                        <td>${item.rank}</td>
-                    </tr>
-                `;
-            });
-            
-            tableHTML += `
-                        </tbody>
-                    </table>
-                </div>
-            `;
-            
-            container.innerHTML = tableHTML;
-        }
-
-        // 新增：显示专业排名信息
-        function displayMajorRank(majorData) {
-            const container = document.getElementById('major-rank-container');
-            const countElement = document.getElementById('major-count');
-            
-            if (!majorData || majorData.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        该院校暂无专业排名信息
-                    </div>
-                `;
-                countElement.textContent = '0';
-                return;
-            }
-            
-            // 对专业排名数据进行排序
-            const sortedData = [...majorData].sort(customSortMajorRank);
-            
-            // 更新统计数量
-            countElement.textContent = sortedData.length;
-            
-            // 创建表格HTML
-            let tableHTML = `
-                <div class="discipline-table-container">
-                    <table class="discipline-table">
-                        <thead>
-                            <tr>
-                                <th>专业名称</th>
-                                <th>排名层次</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
-            
-            sortedData.forEach(item => {
-                tableHTML += `
-                    <tr>
-                        <td>${item.major}</td>
-                        <td>${item.rank}</td>
-                    </tr>
-                `;
-            });
-            
-            tableHTML += `
-                        </tbody>
-                    </table>
-                </div>
-            `;
-            
-            container.innerHTML = tableHTML;
-        }
-
-        // 自定义排序函数
-        function customSortDisciplineRank(a, b) {
-            // 提取排名值（处理"前2%"、"2%"、"第1名"等格式）
-            function extractRankValue(rankStr) {
-                rankStr = rankStr.toLowerCase();
-                // 处理"前X名"格式
-                const nameMatch = rankStr.match(/前(\d+)名/);
-                if (nameMatch) return parseInt(nameMatch[1]);
-                
-                // 处理"前X%"格式
-                const prefixMatch = rankStr.match(/前(\d+)%/);
-                if (prefixMatch) return parseFloat(prefixMatch[1]);
-                
-                // 处理纯数字排名
-                const numMatch = rankStr.match(/\d+/);
-                if (numMatch) return parseInt(numMatch[0]);
-                
-                // 默认返回一个大值，使无法识别的排名靠后
-                return Infinity;
-            }
-            
-            const valueA = extractRankValue(a.rank);
-            const valueB = extractRankValue(b.rank);
-            
-            // 先按排名值排序
-            if (valueA !== valueB) {
-                return valueA - valueB;
-            }
-            
-            // 如果排名值相同，则按学科名称排序
-            return a.discipline.localeCompare(b.discipline);
-        }
-
-        // 显示学科排名信息
-        function displayDisciplineRank(disciplineData) {
-            const container = document.getElementById('discipline-rank-container');
-            const countElement = document.getElementById('discipline-count');
-            
-            if (!disciplineData || disciplineData.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        该院校暂无学科排名信息
-                    </div>
-                `;
-                countElement.textContent = '0';
-                return;
-            }
-            
-            // 对学科排名数据进行排序
-            const sortedData = [...disciplineData].sort(customSortDisciplineRank);
-            
-            // 更新统计数量
-            countElement.textContent = sortedData.length;
-            
-            // 创建表格HTML
-            let tableHTML = `
-                <div class="discipline-table-container">
-                    <table class="discipline-table">
-                        <thead>
-                            <tr>
-                                <th>学科名称</th>
-                                <th>排名层次</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
-            
-            sortedData.forEach(item => {
-                tableHTML += `
-                    <tr>
-                        <td>${item.discipline}</td>
-                        <td>${item.rank}</td>
-                    </tr>
-                `;
-            });
-            
-            tableHTML += `
-                        </tbody>
-                    </table>
-                </div>
-            `;
-            
-            container.innerHTML = tableHTML;
-        }
-
-        function fetchOverviewData() {
-            fetch('/get_overview', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    province: selectedFilters.province,
-                    property: selectedFilters.property,
-                    type: selectedFilters.type,
-                    level: selectedFilters.level
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById('overview-total').textContent = data.total;
-                document.getElementById('overview-benke').textContent = data.benke;
-                document.getElementById('overview-985').textContent = data['985'];
-                document.getElementById('overview-211').textContent = data['211'];
-                document.getElementById('overview-doubletop').textContent = data.doubletop;
-            });
-        }
-
-        // 饼图
-        const pieChart = echarts.init(document.getElementById('chart-pie'));
-        const pieOption = {
-            tooltip: { trigger: 'item', formatter: '{b}: {c}所 ({d}%)' },
-            series: [{
-                name: '院校类型分布',
-                type: 'pie',
-                radius: ['20%', '80%'],
-                roseType: 'area',
-                avoidLabelOverlap: false,
-                itemStyle: { borderRadius: 10, borderColor: '#0c2461', borderWidth: 2 },
-                label: { show: true, formatter: '{b}: {c}所', color: '#fff' },
-                emphasis: {
-                    label: { show: true, fontSize: '16', fontWeight: 'bold' },
-                    itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' }
-                },
-                labelLine: { show: true },
-                data: []
-            }],
-            backgroundColor: 'transparent'
+        // 全局状态管理 - 保持空筛选器，这样会显示全部数据
+        const appState = {
+            filterOptions: { province: [], property: [], type: [], level: [] },
+            selectedFilters: { province: [], property: [], type: [], level: [] }, // 默认空数组表示不筛选
+            colorMaps: { type: {}, province: {}, property: {}, level: {} },
+            universitiesList: []
         };
 
-        function updatePieChart(data) {
-            pieOption.series[0].data = data.map(item => ({
-                ...item,
-                itemStyle: { color: typeColorMap[item.name] }
-            }));
-            pieOption.color = filterOptions.type.map(t => typeColorMap[t]);
-            pieChart.setOption(pieOption);
-        }
-
-        // 矩形树图
-        const treemapChart = echarts.init(document.getElementById('chart-treemap'));
-        const treemapOption = {
-            tooltip: { formatter: '{b}: {c}所' },
-            series: [{
-                type: 'treemap',
-                roam: false,
-                nodeClick: false,
-                label: {
-                    show: true,
-                    formatter: '{b}\n{c}所',
-                    color: '#fff',
-                    fontSize: 16,
-                    fontWeight: 'bold'
-                },
-                itemStyle: { gapWidth: 1 },
-                upperLabel: { show: false },
-                breadcrumb: { show: false },
-                data: []
-            }],
-            backgroundColor: 'transparent'
-        };
-
-        function updateTreemapChart(data) {
-            treemapOption.series[0].data = data.map(item => ({
-                name: item.name,
-                value: item.value,
-                itemStyle: { color: provinceColorMap[item.name] }
-            }));
-            treemapChart.setOption(treemapOption);
-        }
-
-        // 办学层次柱状图
-        const levelChart = echarts.init(document.getElementById('chart-level'));
-        const levelBarOption = {
-            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-            xAxis: {
-                type: 'category',
-                data: ["普通本科", "职业本科", "高职（专科）"],
-                axisLabel: { color: '#fff', fontWeight: 'bold' }
+        // 工具函数模块
+        const utils = {
+            // 生成唯一颜色
+            generateDistinctColors(total) {
+                const colors = [];
+                const saturation = 70 + Math.random() * 20;
+                const lightness = 50 + Math.random() * 10;
+                for (let i = 0; i < total; i++) {
+                    const hue = Math.floor((360 / total) * i + Math.random() * 10) % 360;
+                    colors.push(`hsl(${hue},${saturation}%,${lightness}%)`);
+                }
+                // 打乱颜色顺序
+                for (let i = colors.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [colors[i], colors[j]] = [colors[j], colors[i]];
+                }
+                return colors;
             },
-            yAxis: { type: 'value', axisLabel: { color: '#fff' } },
-            series: [{
-                name: '办学层次分布',
-                type: 'bar',
-                barWidth: 50,
-                itemStyle: { borderRadius: [8, 8, 0, 0] },
-                label: {
-                    show: true,
-                    position: 'top',
-                    color: '#fff',
-                    fontWeight: 'bold',
-                    formatter: '{c}'
-                },
-                data: []
-            }],
-            backgroundColor: 'transparent'
+            
+            // 发送API请求
+            fetchData(url, data = {}) {
+                return fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                }).then(response => response.json())
+                  .catch(error => {
+                      console.error(`请求${url}失败:`, error);
+                      return null;
+                  });
+            }
         };
 
-        function updateLevelBarChart(data) {
-            levelBarOption.series[0].data = data.map(item => ({
-                value: item.value,
-                itemStyle: { color: levelColorMap[item.name] }
-            }));
-            levelChart.setOption(levelBarOption);
-        }
+        // 颜色管理模块
+        const colorManager = {
+            assignUniqueColors(typeList, provinceList, propertyList, levelList) {
+                const colorPool = utils.generateDistinctColors(
+                    typeList.length + provinceList.length + propertyList.length + levelList.length
+                );
+                
+                appState.colorMaps.type = Object.fromEntries(typeList.map((t, i) => [t, colorPool[i]]));
+                appState.colorMaps.province = Object.fromEntries(provinceList.map((p, i) => [p, colorPool[typeList.length + i]]));
+                appState.colorMaps.property = Object.fromEntries(propertyList.map((f, i) => [f, colorPool[typeList.length + provinceList.length + i]]));
+                appState.colorMaps.level = Object.fromEntries(levelList.map((l, i) => [l, colorPool[typeList.length + provinceList.length + propertyList.length + i]]));
+            }
+        };
 
-        function fetchChartData() {
-            fetch('/get_chart_data', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    province: selectedFilters.province,
-                    property: selectedFilters.property,
-                    type: selectedFilters.type,
-                    level: selectedFilters.level
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                updatePieChart(data.chart_data);
-                updateTreemapChart(data.bar_data);
-                updateLevelBarChart(data.level_data || []);
-                document.getElementById('type-count').textContent = data.chart_data.length;
-                document.getElementById('province-count').textContent = data.bar_data.length;
-            })
-            .catch(error => {
-                console.error('获取图表数据失败:', error);
-            });
-        }
+        // 筛选器模块
+        const filterModule = {
+            init() {
+                this.initSearchableSelect(
+                    'search-province', 
+                    'search-province-input', 
+                    'search-province-dropdown', 
+                    '搜索省份...', 
+                    'province'
+                );
+                this.initSearchableSelect(
+                    'search-property', 
+                    'search-property-input', 
+                    'search-property-dropdown', 
+                    '搜索院校特性...', 
+                    'property'
+                );
+                this.initSearchableSelect(
+                    'search-level', 
+                    'search-level-input', 
+                    'search-level-dropdown', 
+                    '搜索办学层次...', 
+                    'level'
+                );
+                this.initSearchableSelect(
+                    'search-type', 
+                    'search-type-input', 
+                    'search-type-dropdown', 
+                    '搜索院校类型...', 
+                    'type'
+                );
+            },
+            
+            initSearchableSelect(selectId, inputId, dropdownId, placeholder, filterType) {
+                const input = document.getElementById(inputId);
+                const select = document.getElementById(selectId);
+                const dropdown = document.getElementById(dropdownId);
+                
+                // 渲染下拉选项
+                const renderOptions = (filterText = '') => {
+                    dropdown.innerHTML = '';
+                    const options = appState.filterOptions[filterType] || [];
+                    
+                    const filteredOptions = options.filter(option => 
+                        option.toLowerCase().includes(filterText.toLowerCase())
+                    );
+                    
+                    if (filteredOptions.length === 0) {
+                        const noResult = document.createElement('div');
+                        noResult.textContent = '无匹配结果';
+                        dropdown.appendChild(noResult);
+                        return;
+                    }
+                    
+                    filteredOptions.forEach(option => {
+                        const div = document.createElement('div');
+                        div.textContent = option;
+                        div.onclick = () => {
+                            input.value = option;
+                            select.value = option;
+                            dropdown.style.display = 'none';
+                            
+                            // 触发筛选器变化 - 只在选择了选项时才应用筛选
+                            appState.selectedFilters[filterType] = [option];
+                            chartModule.fetchChartData();
+                            overviewModule.fetchOverviewData();
+                            universityModule.fetchUniversitiesForSelect();
+                        };
+                        dropdown.appendChild(div);
+                    });
+                };
+                
+                // 输入框事件
+                input.addEventListener('focus', () => {
+                    if (dropdown.children.length === 0) {
+                        renderOptions();
+                    }
+                    dropdown.style.display = 'block';
+                });
+                
+                input.addEventListener('input', (e) => renderOptions(e.target.value));
+                
+                input.addEventListener('blur', () => {
+                    setTimeout(() => dropdown.style.display = 'none', 200);
+                });
+                
+                // 清除筛选按钮功能
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        input.value = '';
+                        select.value = '';
+                        appState.selectedFilters[filterType] = []; // 清空筛选
+                        dropdown.style.display = 'none';
+                        // 重新加载全部数据
+                        chartModule.fetchChartData();
+                        overviewModule.fetchOverviewData();
+                        universityModule.fetchUniversitiesForSelect();
+                    }
+                });
+                
+                // 初始化下拉选项
+                renderOptions();
+            },
+            
+            fetchFilterOptions() {
+                return fetch('/get_options')
+                    .then(response => response.json())
+                    .then(data => {
+                        appState.filterOptions = {
+                            province: data.province,
+                            property: data.property,
+                            type: data.type,
+                            level: data.level
+                        };
+                        colorManager.assignUniqueColors(
+                            appState.filterOptions.type,
+                            appState.filterOptions.province,
+                            appState.filterOptions.property,
+                            appState.filterOptions.level
+                        );
+                        this.init();
+                        return data;
+                    });
+            }
+        };
 
-        window.addEventListener('resize', () => {
-            pieChart.resize();
-            treemapChart.resize();
-            levelChart.resize();
-        });
+        // 大学搜索与详情模块
+        const universityModule = {
+            init() {
+                this.initUniversitySearch();
+            },
+            
+            initUniversitySearch() {
+                const input = document.getElementById('university-search-input');
+                const select = document.getElementById('university-select');
+                const dropdown = document.getElementById('university-search-dropdown');
+                
+                // 清空现有选项
+                select.innerHTML = '<option value="">请选择大学</option>';
+                
+                if (appState.universitiesList.length === 0) return;
+                
+                // 按名称排序
+                const sortedUniversities = [...appState.universitiesList]
+                    .sort((a, b) => a.name.localeCompare(b.name));
+                
+                // 添加到隐藏的select中
+                sortedUniversities.forEach(university => {
+                    const option = document.createElement('option');
+                    option.value = university.name;
+                    option.textContent = university.name;
+                    select.appendChild(option);
+                });
+                
+                // 渲染下拉选项
+                const renderOptions = (filterText = '') => {
+                    dropdown.innerHTML = '';
+                    
+                    const filteredUniversities = sortedUniversities.filter(uni => 
+                        uni.name.toLowerCase().includes(filterText.toLowerCase())
+                    );
+                    
+                    if (filteredUniversities.length === 0) {
+                        const noResult = document.createElement('div');
+                        noResult.textContent = '无匹配结果';
+                        dropdown.appendChild(noResult);
+                        return;
+                    }
+                    
+                    filteredUniversities.forEach(uni => {
+                        const div = document.createElement('div');
+                        div.textContent = uni.name;
+                        div.onclick = () => {
+                            input.value = uni.name;
+                            select.value = uni.name;
+                            dropdown.style.display = 'none';
+                            
+                            // 触发大学选择变化
+                            this.fetchUniversityRank(uni.name);
+                            disciplineModule.fetchDisciplineRank(uni.name);
+                        };
+                        dropdown.appendChild(div);
+                    });
+                };
+                
+                // 输入框事件
+                input.addEventListener('focus', () => {
+                    if (dropdown.children.length === 0) renderOptions();
+                    dropdown.style.display = 'block';
+                });
+                
+                input.addEventListener('input', (e) => renderOptions(e.target.value));
+                
+                input.addEventListener('blur', () => {
+                    setTimeout(() => dropdown.style.display = 'none', 200);
+                });
+                
+                // 初始化下拉选项
+                renderOptions();
+            },
+            
+            fetchUniversitiesForSelect() {
+                return utils.fetchData('/get_universities_list', {
+                    province: appState.selectedFilters.province,
+                    property: appState.selectedFilters.property,
+                    type: appState.selectedFilters.type,
+                    level: appState.selectedFilters.level
+                }).then(data => {
+                    if (data) {
+                        appState.universitiesList = data.universities || [];
+                        this.initUniversitySearch();
+                    }
+                });
+            },
+            
+            fetchUniversityRank(universityName) {
+                return utils.fetchData('/get_university_rank', {
+                    university_name: universityName
+                }).then(data => {
+                    this.displayUniversityRank(data);
+                    // 获取专业排名
+                    majorModule.fetchMajorRank(universityName);
+                });
+            },
+            
+            displayUniversityRank(rankData) {
+                const container = document.getElementById('rank-info-container');
+                const detailContainer = document.getElementById('university-rank-detail');
+                
+                if (!rankData || rankData.length === 0) {
+                    container.innerHTML = '<div class="rank-info-item">暂无该院校排名信息</div>';
+                    detailContainer.style.display = 'block';
+                    return;
+                }
+                
+                let html = '';
+                rankData.forEach(item => {
+                    const displayRank = item.rank_display || `第${item.rank}名`;
+                    html += `
+                        <div class="rank-info-item">
+                            <span class="rank-info-label">${item.rank_type}:</span>
+                            <span class="rank-info-value">${displayRank}</span>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+                detailContainer.style.display = 'block';
+            }
+        };
 
+        // 学科排名模块
+        const disciplineModule = {
+            fetchDisciplineRank(universityName) {
+                return utils.fetchData('/get_university_discipline_rank', {
+                    university_name: universityName
+                }).then(data => this.displayDisciplineRank(data));
+            },
+            
+            displayDisciplineRank(disciplineData) {
+                const container = document.getElementById('discipline-rank-container');
+                const countElement = document.getElementById('discipline-count');
+                
+                if (!disciplineData || disciplineData.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">该院校暂无学科排名信息</div>
+                    `;
+                    countElement.textContent = '0';
+                    return;
+                }
+                
+                // 对学科排名数据进行排序 - 只处理"前*名"和"前*%"两种格式
+                const sortedData = [...disciplineData].sort(this.customSortDisciplineRank);
+                
+                // 更新统计数量
+                countElement.textContent = sortedData.length;
+                
+                // 创建表格HTML
+                let tableHTML = `
+                    <div class="discipline-table-container">
+                        <table class="discipline-table">
+                            <thead>
+                                <tr>
+                                    <th>学科名称</th>
+                                    <th>排名层次</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                sortedData.forEach(item => {
+                    tableHTML += `
+                        <tr>
+                            <td>${item.discipline}</td>
+                            <td>${item.rank}</td>
+                        </tr>
+                    `;
+                });
+                
+                tableHTML += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                container.innerHTML = tableHTML;
+            },
+            
+            customSortDisciplineRank(a, b) {
+                // 提取排名值和类型
+                const getRankInfo = (rankStr) => {
+                    rankStr = rankStr.toLowerCase();
+                    
+                    // 处理"前X名"格式
+                    const nameMatch = rankStr.match(/前(\d+)名/);
+                    if (nameMatch) {
+                        return {
+                            type: 0,  // 名次类型优先级为0
+                            value: parseInt(nameMatch[1])
+                        };
+                    }
+                    
+                    // 处理"前X%"格式
+                    const percentMatch = rankStr.match(/前(\d+)%/);
+                    if (percentMatch) {
+                        return {
+                            type: 1,  // 百分比类型优先级为1
+                            value: parseFloat(percentMatch[1])
+                        };
+                    }
+                    
+                    // 根据需求，不存在其他格式，所以这里可以直接返回一个默认值
+                    return {
+                        type: 2,  // 其他类型（理论上不会出现）
+                        value: Infinity
+                    };
+                };
+                
+                const infoA = getRankInfo(a.rank);
+                const infoB = getRankInfo(b.rank);
+                
+                // 先按类型排序（名次在前，百分比在后）
+                if (infoA.type !== infoB.type) {
+                    return infoA.type - infoB.type;
+                }
+                
+                // 同类型按数值大小排序
+                return infoA.value - infoB.value;
+            }
+        };
+
+        // 专业排名模块
+        const majorModule = {
+            fetchMajorRank(universityName) {
+                return utils.fetchData('/get_university_major_rank', {
+                    university_name: universityName
+                }).then(data => this.displayMajorRank(data));
+            },
+            
+            displayMajorRank(majorData) {
+                const container = document.getElementById('major-rank-container');
+                const countElement = document.getElementById('major-count');
+                
+                if (!majorData || majorData.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">该院校暂无专业排名信息</div>
+                    `;
+                    countElement.textContent = '0';
+                    return;
+                }
+                
+                // 对专业排名数据进行排序
+                const sortedData = [...majorData].sort(this.customSortMajorRank);
+                
+                // 更新统计数量
+                countElement.textContent = sortedData.length;
+                
+                // 创建表格HTML
+                let tableHTML = `
+                    <div class="discipline-table-container">
+                        <table class="discipline-table">
+                            <thead>
+                                <tr>
+                                    <th>专业名称</th>
+                                    <th>排名层次</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                sortedData.forEach(item => {
+                    tableHTML += `
+                        <tr>
+                            <td>${item.major}</td>
+                            <td>${item.rank}</td>
+                        </tr>
+                    `;
+                });
+                
+                tableHTML += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                container.innerHTML = tableHTML;
+            },
+            
+            customSortMajorRank(a, b) {
+                // 定义排名层次优先级
+                const rankOrder = ['A+', 'A', 'B+', 'B'];
+                
+                // 如果排名在预设顺序中，使用预设顺序
+                const getRankValue = (rank) => {
+                    const index = rankOrder.indexOf(rank);
+                    return index === -1 ? rankOrder.length : index;
+                };
+                
+                const valueA = getRankValue(a.rank);
+                const valueB = getRankValue(b.rank);
+                
+                // 先按排名值排序
+                if (valueA !== valueB) return valueA - valueB;
+                
+                // 如果排名值相同，则按专业名称排序
+                return a.major.localeCompare(b.major);
+            }
+        };
+
+        // 概览数据模块
+        const overviewModule = {
+            fetchOverviewData() {
+                return utils.fetchData('/get_overview', {
+                    province: appState.selectedFilters.province,
+                    property: appState.selectedFilters.property,
+                    type: appState.selectedFilters.type,
+                    level: appState.selectedFilters.level
+                }).then(data => {
+                    if (data) {
+                        document.getElementById('overview-total').textContent = data.total;
+                        document.getElementById('overview-benke').textContent = data.benke;
+                        document.getElementById('overview-985').textContent = data['985'];
+                        document.getElementById('overview-211').textContent = data['211'];
+                        document.getElementById('overview-doubletop').textContent = data.doubletop;
+                    }
+                });
+            }
+        };
+
+        // 图表模块
+        const chartModule = {
+            init() {
+                // 初始化图表实例
+                this.pieChart = echarts.init(document.getElementById('chart-pie'));
+                this.treemapChart = echarts.init(document.getElementById('chart-treemap'));
+                this.levelChart = echarts.init(document.getElementById('chart-level'));
+                
+                // 初始化图表配置
+                this.initChartOptions();
+                
+                // 监听窗口大小变化
+                window.addEventListener('resize', () => this.handleResize());
+            },
+            
+            initChartOptions() {
+                // 饼图配置
+                this.pieOption = {
+                    tooltip: { trigger: 'item', formatter: '{b}: {c}所 ({d}%)' },
+                    series: [{
+                        name: '院校类型分布',
+                        type: 'pie',
+                        radius: ['20%', '80%'],
+                        roseType: 'area',
+                        avoidLabelOverlap: false,
+                        itemStyle: { borderRadius: 10, borderColor: '#0c2461', borderWidth: 2 },
+                        label: { show: true, formatter: '{b}: {c}所', color: '#fff' },
+                        emphasis: {
+                            label: { show: true, fontSize: '16', fontWeight: 'bold' },
+                            itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' }
+                        },
+                        labelLine: { show: true },
+                        data: []
+                    }],
+                    backgroundColor: 'transparent'
+                };
+                
+                // 矩形树图配置
+                this.treemapOption = {
+                    tooltip: { formatter: '{b}: {c}所' },
+                    series: [{
+                        type: 'treemap',
+                        roam: false,
+                        nodeClick: false,
+                        label: {
+                            show: true,
+                            formatter: '{b}\n{c}所',
+                            color: '#fff',
+                            fontSize: 16,
+                            fontWeight: 'bold'
+                        },
+                        itemStyle: { gapWidth: 1 },
+                        upperLabel: { show: false },
+                        breadcrumb: { show: false },
+                        data: []
+                    }],
+                    backgroundColor: 'transparent'
+                };
+                
+                // 办学层次柱状图配置
+                this.levelBarOption = {
+                    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                    xAxis: {
+                        type: 'category',
+                        data: ["普通本科", "职业本科", "高职（专科）"],
+                        axisLabel: { color: '#fff', fontWeight: 'bold' }
+                    },
+                    yAxis: { type: 'value', axisLabel: { color: '#fff' } },
+                    series: [{
+                        name: '办学层次分布',
+                        type: 'bar',
+                        barWidth: 50,
+                        itemStyle: { borderRadius: [8, 8, 0, 0] },
+                        label: {
+                            show: true,
+                            position: 'top',
+                            color: '#fff',
+                            fontWeight: 'bold',
+                            formatter: '{c}'
+                        },
+                        data: []
+                    }],
+                    backgroundColor: 'transparent'
+                };
+            },
+            
+            fetchChartData() {
+                return utils.fetchData('/get_chart_data', {
+                    province: appState.selectedFilters.province,
+                    property: appState.selectedFilters.property,
+                    type: appState.selectedFilters.type,
+                    level: appState.selectedFilters.level
+                }).then(data => {
+                    if (data) {
+                        this.updatePieChart(data.chart_data);
+                        this.updateTreemapChart(data.bar_data);
+                        this.updateLevelBarChart(data.level_data || []);
+                        document.getElementById('type-count').textContent = data.chart_data.length;
+                        document.getElementById('province-count').textContent = data.bar_data.length;
+                    }
+                });
+            },
+            
+            updatePieChart(data) {
+                this.pieOption.series[0].data = data.map(item => ({
+                    ...item,
+                    itemStyle: { color: appState.colorMaps.type[item.name] }
+                }));
+                this.pieOption.color = appState.filterOptions.type.map(t => appState.colorMaps.type[t]);
+                this.pieChart.setOption(this.pieOption);
+            },
+            
+            updateTreemapChart(data) {
+                this.treemapOption.series[0].data = data.map(item => ({
+                    name: item.name,
+                    value: item.value,
+                    itemStyle: { color: appState.colorMaps.province[item.name] }
+                }));
+                this.treemapChart.setOption(this.treemapOption);
+            },
+            
+            updateLevelBarChart(data) {
+                this.levelBarOption.series[0].data = data.map(item => ({
+                    value: item.value,
+                    itemStyle: { color: appState.colorMaps.level[item.name] }
+                }));
+                this.levelChart.setOption(this.levelBarOption);
+            },
+            
+            handleResize() {
+                this.pieChart.resize();
+                this.treemapChart.resize();
+                this.levelChart.resize();
+            }
+        };
+
+        // 初始化应用 - 确保页面加载时获取全部数据
         window.addEventListener('DOMContentLoaded', function() {
-            fetchFilterOptions();
-            setTimeout(() => {
-                fetchChartData();
-                fetchOverviewData();
-                fetchUniversitiesForSelect();
-            }, 500);
+            // 初始化图表
+            chartModule.init();
+            
+            // 加载筛选选项并初始化
+            filterModule.fetchFilterOptions().then(() => {
+                // 加载初始数据 - 使用空筛选条件获取全部数据
+                chartModule.fetchChartData();
+                overviewModule.fetchOverviewData();
+                universityModule.fetchUniversitiesForSelect();
+            });
         });
     </script>
 </body>
