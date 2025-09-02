@@ -62,7 +62,6 @@ def path(i, j, d):
     return urls[i] if i < len(urls) else urls[-1]
 
 def remove(i, df):
-    df = pd.DataFrame(df)
     columns_to_keep = [col for col in df.columns if col not in dropcolumn[i]]
     df = df[columns_to_keep]
     col_mapping = {old_key: new_key for item in replacement for old_key, new_key in item.items()}
@@ -72,7 +71,7 @@ def univdata(j, i, d, finduniv):
     eachresponse = requests.get(path(i, j, d))
     eachtext = eachresponse.text
     univ = json.loads(re.findall(finduniv, eachtext)[0])
-    return remove(i, univ)
+    return pd.DataFrame(univ)
 
 def newsplit2(text):
     a = b = 0
@@ -120,7 +119,7 @@ def newreplace2(text, datalist):
 def univdata2(univ, text):
     univdata = newsplit2(univ)
     univdata = newreplace2(text, univdata)
-    return remove(7, univdata)
+    return pd.DataFrame(univdata)
 
 def newsave1(i, current_dir, years=None):
     years = years if years is not None else ry[i]
@@ -132,7 +131,7 @@ def newsave1(i, current_dir, years=None):
         folder = os.path.join(current_dir, f'{rn[i]}')
         os.makedirs(folder, exist_ok=True)
         for k, d in enumerate(namelist[0]):
-            univ = univdata(j, i, d, finduniv)
+            univ = remove(i, univdata(j, i, d, finduniv))
             file_path = os.path.join(folder, f'{j}年{namelist[1][k]}.xlsx')
             univ.to_excel(file_path, sheet_name=f'{j}年{namelist[1][k]}', index=False)
             print(f"数据已成功保存到{file_path}文件中。")
@@ -141,7 +140,7 @@ def newsave2(i, current_dir, years=None):
     years = years if years is not None else ry[i]
     finduniv = re.compile(rr[i][3])
     for j in years:
-        univ = univdata(j, i, 0, finduniv)
+        univ = remove(i, univdata(j, i, 0, finduniv))
         folder = os.path.join(current_dir, f'{rn[i]}')
         os.makedirs(folder, exist_ok=True)
         file_path = os.path.join(folder, f'{j}年.xlsx')

@@ -2,7 +2,7 @@
 
 import re
 
-number = '1755079592'  # number每隔几天网站更新会更换一次，README.md文件内有获取此数字的方法。
+number = '1755659516'  # number每隔几天网站更新会更换一次，README.md文件内有获取此数字的方法。
 
 rv = [
     'bcur', 'bcsr', 'bcmr', 'bcvcr', 'arwu', 'gras', 'grsssd'
@@ -39,7 +39,7 @@ finduniv = re.compile(r'\{(.*?);return')
 
 dropcolumn = [
     ['univUp', 'univLogo', 'liked', 'inbound', 'univLikeCount', 'univTags', 'indData', 'univNameRemark', 'univNameEn', 'rankChange', 'rankOverall'],
-    ['univCode', 'univUp', 'univLogo', 'liked', 'inbound', 'univLikeCount', 'doctoralDegree', 'focusSubj', 'contrastRanking', 'rankPctTop'],
+    ['univCode', 'univUp', 'univLogo', 'liked', 'inbound', 'univLikeCount', 'doctoralDegree', 'focusSubj', 'contrastRanking', 'rankPctTopNum'],
     ['univCode', 'univUp', 'univLogo', 'city', 'liked', 'inbound', 'univLikeCount', 'univTags', 'indGrades', 'province'],
     ['univUp', 'isVocational', 'univLogo', 'liked', 'univLikeCount', 'univTags', 'indData', 'outdated', 'univNameEn', 'rankOverall'],
     ['univUp', 'univLogo', 'regionLogo', 'indData'],
@@ -64,7 +64,7 @@ replacement = [
     {'score': '得分'},
     {'ranking': '排名'},
     {'grade': '评级'},
-    {'rankPctTopNum': '层次'},
+    {'rankPctTop': '层次'},
     {'univNameEn': '英文名称'},
     {'region': '地区'},
     {'regionRanking': '地区排名'}
