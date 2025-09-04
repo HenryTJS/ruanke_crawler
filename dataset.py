@@ -1,142 +1,123 @@
-# 中国大学数据爬取主函数程序
-
 import requests
 import re
 import pandas as pd
 import numpy as np
 from data import number, finduniv, ry, rr, rv
-from function import remove, univdata2, univdata, listname
+from function import remove, univdata2, univdata, listname, save_to_database
+
+
+def _fetch_rank_data(index):
+    path_url = f'https://www.shanghairanking.cn/_nuxt/static/{number}/rankings/{rv[index]}/{ry[index][-1]}/payload.js'
+    text = requests.get(path_url).text
+    namelist = listname(index, text)
+    find_univ_pattern = re.compile(rr[index][3])
+    
+    rank_list = []
+    for k, d in enumerate(namelist[0]):
+        if '总榜' in namelist[1][k] or '名单' in namelist[1][k]:
+            continue
+            
+        univ = univdata(ry[index][-1], index, d, find_univ_pattern)
+        df_selected = univ[['univNameCn', 'score']].rename(
+            columns={'univNameCn': '中文名称', 'score': '得分'}
+        )
+        df_selected['排名类型'] = namelist[1][k]
+        rank_list.append(df_selected)
+    
+    return pd.concat(rank_list, ignore_index=True).dropna()
+
 
 def rank():
-    ranklist = []
-    for i in [0, 3]:
-        path_url = f'https://www.shanghairanking.cn/_nuxt/static/{number}/rankings/{rv[i]}/{ry[i][-1]}/payload.js'
-        text = requests.get(path_url).text
-        namelist = listname(i, text)
-        finduniv = re.compile(rr[i][3])
-        for k, d in enumerate(namelist[0]):
-            if '总榜' in namelist[1][k] or '名单' in namelist[1][k]:
-                continue
-            univ = univdata(ry[i][-1], i, d, finduniv)
-            selected_columns = ['univNameCn', 'score']
-            new_column_names = ['中文名称', '得分']
-            df_selected = univ[selected_columns]
-            df_selected.columns = new_column_names
-            df_selected['排名类型'] = namelist[1][k]
-            ranklist.append(df_selected)
-    result = pd.concat(ranklist, ignore_index=True).dropna()
-    return result
+    rank_data = [_fetch_rank_data(i) for i in [0, 3]]
+    return pd.concat(rank_data, ignore_index=True)
 
-def classify_subject(level):
-    if level in {'前2名', '前3%'}:
-        return ('顶尖学科', '一流学科', '上榜学科')
-    elif level in {'前2名', '前3名', '前3%', '前7%', '前12%'}:
-        return (None, '一流学科', '上榜学科')
-    else:
+
+def _classify_levels(level, classification_type):
+    if classification_type == 'subject':
+        if level in {'前2名', '前3%'}:
+            return ('顶尖学科', '一流学科', '上榜学科')
+        elif level in {'前2名', '前3名', '前3%', '前7%', '前12%'}:
+            return (None, '一流学科', '上榜学科')
         return (None, None, '上榜学科')
-
-def classify_major(level):
-    if level in {'A+'}:
-        return ('A+专业', 'A类专业', '上榜专业')
-    elif level in {'A+', 'A'}:
-        return (None, 'A类专业', '上榜专业')
-    elif level in {'A+', 'A', 'B+', 'B'}:
-        return (None, None, '上榜专业')
-    else:
+    elif classification_type == 'major':
+        if level in {'A+'}:
+            return ('A+专业', 'A类专业', '上榜专业')
+        elif level in {'A+', 'A'}:
+            return (None, 'A类专业', '上榜专业')
+        elif level in {'A+', 'A', 'B+', 'B'}:
+            return (None, None, '上榜专业')
         return (None, None, None)
+    return (None, None, None)
 
-def num1():
-    numlist = []
-    path_url = f'https://www.shanghairanking.cn/_nuxt/static/{number}/rankings/{rv[1]}/{ry[1][-1]}/payload.js'
+
+def process_classification_data(index, classification_type):
+    path_url = f'https://www.shanghairanking.cn/_nuxt/static/{number}/rankings/{rv[index]}/{ry[index][-1]}/payload.js'
     text = requests.get(path_url).text
-    namelist = listname(1, text)
-    finduniv = re.compile(rr[1][3])
+    namelist = listname(index, text)
+    find_univ_pattern = re.compile(rr[index][3])
+    
+    data_list = []
     for _, d in enumerate(namelist[0]):
-        univ = univdata(ry[1][-1], 1, d, finduniv)
-        selected_columns = ['univNameCn', 'rankPctTop']
-        new_column_names = ['中文名称', '层次']
-        df_selected = univ[selected_columns]
-        df_selected.columns = new_column_names
-        numlist.append(df_selected)
-    universities = set()
-    for df in numlist:
-        universities.update(df['中文名称'].unique())
-    data = pd.DataFrame(
-        np.zeros((len(universities), 3), dtype=int),
-        index=list(universities),
-        columns=['顶尖学科', '一流学科', '上榜学科']
+        univ = univdata(ry[index][-1], index, d, find_univ_pattern)
+        
+        if classification_type == 'subject':
+            selected_columns = ['univNameCn', 'rankPctTop']
+            new_column_names = ['中文名称', '层次']
+        else:
+            selected_columns = ['univNameCn', 'grade']
+            new_column_names = ['中文名称', '评级']
+            
+        df_selected = univ[selected_columns].rename(columns=dict(zip(selected_columns, new_column_names)))
+        data_list.append(df_selected)
+    
+    all_universities = set()
+    for df in data_list:
+        all_universities.update(df['中文名称'].unique())
+    
+    if classification_type == 'subject':
+        columns = ['顶尖学科', '一流学科', '上榜学科']
+    else:
+        columns = ['A+专业', 'A类专业', '上榜专业']
+    
+    result_df = pd.DataFrame(
+        np.zeros((len(all_universities), len(columns)), dtype=int),
+        index=list(all_universities),
+        columns=columns
     )
-    for df in numlist:
+    
+    for df in data_list:
         for _, row in df.iterrows():
             uni = row['中文名称']
-            level = row['层次']
-            top, first, listed = classify_subject(level)
-            if top:
-                data.loc[uni, '顶尖学科'] += 1
-            if first:
-                data.loc[uni, '一流学科'] += 1
-            if listed:
-                data.loc[uni, '上榜学科'] += 1
-    data = data.reset_index()
-    data.columns = ['中文名称', '顶尖学科', '一流学科', '上榜学科']
-    data = data.replace(0, None)
-    return data
+            level = row['层次' if classification_type == 'subject' else '评级']
+            classifications = _classify_levels(level, classification_type)
+            
+            for col, val in zip(columns, classifications):
+                if val:
+                    result_df.loc[uni, col] += 1
+    
+    return result_df.reset_index().rename(columns={'index': '中文名称'}).replace(0, None)
 
-def num2():
-    numlist = []
-    path_url = f'https://www.shanghairanking.cn/_nuxt/static/{number}/rankings/{rv[2]}/{ry[2][-1]}/payload.js'
-    text = requests.get(path_url).text
-    namelist = listname(2, text)
-    finduniv = re.compile(rr[2][3])
-    for _, d in enumerate(namelist[0]):
-        univ = univdata(ry[2][-1], 2, d, finduniv)
-        selected_columns = ['univNameCn', 'grade']
-        new_column_names = ['中文名称', '评级']
-        df_selected = univ[selected_columns]
-        df_selected.columns = new_column_names
-        numlist.append(df_selected)
-    universities = set()
-    for df in numlist:
-        universities.update(df['中文名称'].unique())
-    data = pd.DataFrame(
-        np.zeros((len(universities), 3), dtype=int),
-        index=list(universities),
-        columns=['A+专业', 'A类专业', '上榜专业']
-    )
-    for df in numlist:
-        for _, row in df.iterrows():
-            uni = row['中文名称']
-            level = row['评级']
-            top, first, listed = classify_major(level)
-            if top:
-                data.loc[uni, 'A+专业'] += 1
-            if first:
-                data.loc[uni, 'A类专业'] += 1
-            if listed:
-                data.loc[uni, '上榜专业'] += 1
-    data = data.reset_index()
-    data.columns = ['中文名称', 'A+专业', 'A类专业', '上榜专业']
-    data = data.replace(0, None)
-    return data
 
 def main():
     jsfilepath = f'https://www.shanghairanking.cn/_nuxt/static/{number}/institution/payload.js'
-    jsresponse = requests.get(jsfilepath)
-    text = jsresponse.text
+    text = requests.get(jsfilepath).text
     univ = re.findall(finduniv, text)[0]
-    univdata = remove(7, univdata2(univ, text))
-    univdata["办学层次"] = univdata["办学层次"].replace({
+    univ_data = remove(7, univdata2(univ, text))
+    
+    univ_data["办学层次"] = univ_data["办学层次"].replace({
         "10": "普通本科",
         "15": "职业本科",
         "20": "高职（专科）"
     })
-    merged_df = pd.merge(univdata, rank(), on='中文名称', how='outer')
-    merged = pd.merge(merged_df, num1(), on='中文名称', how='outer')
-    merged = pd.merge(merged, num2(), on='中文名称', how='outer')
-    df_sorted = merged.sort_values(by='院校代码')
-    file_path = '中国大学表.xlsx'
-    df_sorted.to_excel(file_path, index=False)
-    print(f"数据已成功保存到{file_path}文件中。")
+    
+    merged_df = pd.merge(univ_data, rank(), on='中文名称', how='outer')
+    merged_df = pd.merge(merged_df, process_classification_data(1, 'subject'), on='中文名称', how='outer')
+    merged_df = pd.merge(merged_df, process_classification_data(2, 'major'), on='中文名称', how='outer')
+    df_sorted = merged_df.sort_values(by='院校代码')
+    
+    db_path = '中国大学数据集.db'
+    save_to_database(df_sorted, db_path, 'universities')
+
 
 if __name__ == "__main__":
     main()

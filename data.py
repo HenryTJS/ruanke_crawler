@@ -2,7 +2,7 @@
 
 import re
 
-number = '1755659516'  # number每隔几天网站更新会更换一次，README.md文件内有获取此数字的方法。
+number = '1756455449'  # number每隔几天网站更新会更换一次，README.md文件内有获取此数字的方法。
 
 rv = [
     'bcur', 'bcsr', 'bcmr', 'bcvcr', 'arwu', 'gras', 'grsssd'

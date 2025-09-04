@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, render_template
 import pandas as pd
-import numpy as np
+import sqlite3
+from pathlib import Path
 
 app = Flask(__name__)
 
@@ -15,16 +16,32 @@ class DataLoader:
     def load_all_data():
         """加载所有需要的数据表"""
         try:
-            data_store['df'] = pd.read_excel('中国大学表.xlsx')
+            # 检查数据库文件是否存在
+            db_path = '中国大学数据集.db'
+            if not Path(db_path).exists():
+                raise FileNotFoundError(f"数据库文件 {db_path} 不存在")
+            
+            # 连接SQLite数据库
+            conn = sqlite3.connect(db_path)
+            
+            # 假设数据库中有一个名为'universities'的表，包含所有大学数据
+            # 如果表结构不同，需要调整查询语句和列名处理
+            query = "SELECT * FROM universities"
+            data_store['df'] = pd.read_sql_query(query, conn)
+            
             # 确保学科和专业列存在，如果不存在则创建空列
             for col in ['顶尖学科', '一流学科', '上榜学科', 'A+专业', 'A类专业', '上榜专业']:
                 if col not in data_store['df'].columns:
                     data_store['df'][col] = 0
+                    
+            # 关闭数据库连接
+            conn.close()
+            
         except Exception as e:
             print(f"数据加载错误: {e}")
             data_store['df'] = pd.DataFrame()
 
-# 数据筛选模块
+# 数据筛选模块（保持不变）
 class DataFilter:
     @staticmethod
     def filter_dataframe(filter_params):
@@ -65,7 +82,7 @@ class DataFilter:
             props.update([i.strip() for i in str(row['院校特色']).split('/') if i.strip()])
         return any(p in props for p in selected_properties)
 
-# 数据统计模块
+# 数据统计模块（保持不变）
 class DataStatistics:
     @staticmethod
     def get_overview_data(filter_params):
@@ -236,7 +253,7 @@ class DataStatistics:
         
         return wordcloud_data
 
-# 路由处理模块
+# 路由处理模块（保持不变）
 @app.route('/')
 def index():
     return render_template('index.html')
