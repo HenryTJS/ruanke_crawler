@@ -2,8 +2,8 @@ const appState = {
     filterOptions: { province: [], property: [], type: [], level: [], rank_type: [] },
     selectedFilters: { province: [], property: [], type: [], level: [], rank_type: [] },
     colorMaps: { type: {}, province: {}, property: {}, level: {}, rank_type: {}, affiliation: {}, ratio: {} },
-    currentSubjectType: '顶尖学科', // 默认选择顶尖学科
-    currentMajorType: 'A+专业' // 默认选择A+专业
+    currentSubjectType: '顶尖学科',
+    currentMajorType: 'A+专业'
 };
 const utils = {
     generateDistinctColors(total) {

@@ -2,7 +2,7 @@
 
 import re
 
-number = '1756455449'  # number每隔几天网站更新会更换一次，README.md文件内有获取此数字的方法。
+number = '1757562179'  # number每隔几天网站更新会更换一次，README.md文件内有获取此数字的方法。
 
 rv = [
     'bcur', 'bcsr', 'bcmr', 'bcvcr', 'arwu', 'gras', 'grsssd'
@@ -45,7 +45,7 @@ dropcolumn = [
     ['univUp', 'univLogo', 'regionLogo', 'indData'],
     ['univUp', 'univUpEn', 'univLogo', 'inbound', 'univLikeCount', 'liked', 'indData', 'regionRanking', 'univCode'],
     ['univUp', 'unitNameEn', 'univLogo', 'regionLogo', 'indData', 'regionRanking'],
-    ['univEnv', 'logo', 'up', 'isVocational', 'rankBcur', 'liked', 'inbound', 'cateCode', 'univLikeCount', 'charCode', 'level'],
+    ['univEnv', 'logo', 'isVocational', 'rankBcur', 'liked', 'inbound', 'cateCode', 'charCode', 'level'],
 ]
 
 replacement = [
@@ -67,5 +67,7 @@ replacement = [
     {'rankPctTop': '层次'},
     {'univNameEn': '英文名称'},
     {'region': '地区'},
-    {'regionRanking': '地区排名'}
+    {'regionRanking': '地区排名'},
+    {'up': '院校路径'},
+    {'univLikeCount': '点赞数'}
 ]
