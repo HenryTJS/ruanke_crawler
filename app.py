@@ -36,6 +36,15 @@ class DataLoader:
                     
             # 关闭数据库连接
             conn.close()
+
+            # 统一处理所有object列，把"null"、"None"、空字符串都转为NaN
+            for col in data_store['df'].select_dtypes(include='object').columns:
+                data_store['df'][col] = data_store['df'][col].replace(
+                    to_replace=['null', 'None', 'NULL', 'nan', 'NaN', ' '], value=pd.NA
+                )
+                data_store['df'][col] = data_store['df'][col].apply(
+                    lambda x: pd.NA if (pd.isna(x) or str(x).strip() == '' or str(x).lower() in ['null', 'none', 'nan']) else x
+                )
             
         except Exception as e:
             print(f"数据加载错误: {e}")
@@ -123,12 +132,11 @@ class DataStatistics:
     
     @staticmethod
     def get_chart_data(filter_params):
-        """获取图表所需数据"""
         filtered_df = DataFilter.filter_dataframe(filter_params)
-        
+
         if filtered_df.empty:
             return {"chart_data": [], "bar_data": [], "level_data": [], "total_count": 0, "rank_data": []}
-        
+
         # 饼图数据（院校类型分布）
         type_counts = filtered_df['院校类型'].value_counts().reset_index()
         type_counts.columns = ['院校类型', '数量']
@@ -152,21 +160,18 @@ class DataStatistics:
         # 排名数据
         rank_data = []
         if '排名类型' in filtered_df.columns and '得分' in filtered_df.columns and '中文名称' in filtered_df.columns:
-            selected_rank_type = filter_params.get('rank_type', ['中国大学排名（主榜）'])[0] if filter_params.get('rank_type') else '中国大学排名（主榜）'
-            
-            # 只处理与当前筛选排名类型匹配的数据
-            rank_df = filtered_df[filtered_df['排名类型'] == selected_rank_type]
-            
+            selected_rank_type = filter_params.get('rank_type', [])
+            # 如果未选或选了“全部”，只显示主榜
+            if not selected_rank_type or selected_rank_type[0] in ['', '全部']:
+                rank_df = filtered_df[filtered_df['排名类型'] == '中国大学排名（主榜）']
+            else:
+                rank_df = filtered_df[filtered_df['排名类型'] == selected_rank_type[0]]
             if not rank_df.empty:
-                # 按得分降序排序
-                rank_df = rank_df.sort_values(by='得分', ascending=False)
-                
-                # 取前100名
-                rank_df = rank_df.head(100)
-                
+                rank_df = rank_df.sort_values(by='得分', ascending=False).head(100)
                 rank_data = [{
                     'name': row['中文名称'],
-                    'score': float(row['得分'])
+                    'score': float(row['得分']),
+                    'rank_type': row['排名类型']
                 } for _, row in rank_df.iterrows()]
 
         return {
@@ -265,11 +270,11 @@ def get_options():
         return jsonify({"province": [], "type": [], "level": [], "property": [], "rank_type": []})
         
     # 提取省份列表
-    province_list = sorted(data_store['df']['所在省份'].dropna().unique().tolist()) \
+    province_list = sorted([x for x in data_store['df']['所在省份'].dropna().unique().tolist() if str(x).strip()]) \
                    if '所在省份' in data_store['df'].columns else []
     
     # 提取院校类型列表
-    type_list = sorted(data_store['df']['院校类型'].dropna().unique().tolist()) \
+    type_list = sorted([x for x in data_store['df']['院校类型'].dropna().unique().tolist() if str(x).strip()]) \
                if '院校类型' in data_store['df'].columns else []
     
     # 提取办学层次列表
@@ -277,24 +282,27 @@ def get_options():
     if '办学层次' in data_store['df'].columns:
         valid_levels = ["普通本科", "职业本科", "高职（专科）"]
         level_list = [i for i in data_store['df']['办学层次'].dropna().unique().tolist() 
-                     if i in valid_levels]
+                     if i in valid_levels and str(i).strip()]
     
     # 提取院校特性列表
     property_set = set()
     if '院校归属' in data_store['df'].columns:
-        property_set.update(data_store['df']['院校归属'].dropna().unique().tolist())
+        property_set.update([x for x in data_store['df']['院校归属'].dropna().unique().tolist() if str(x).strip()])
     if '院校特色' in data_store['df'].columns:
         data_store['df']['院校特色'].dropna().apply(
             lambda x: [property_set.add(i.strip()) for i in str(x).split('/') if i.strip()]
         )
 
+    # 移除空字符串和办学层次
     for lv in level_list:
         property_set.discard(lv)
+    property_set.discard('')
+    property_set.discard(None)
     
-    property_list = sorted(property_set)
+    property_list = sorted([x for x in property_set if str(x).strip()])
     
     # 提取排名类型列表
-    rank_type_list = sorted(data_store['df']['排名类型'].dropna().unique().tolist()) \
+    rank_type_list = sorted([x for x in data_store['df']['排名类型'].dropna().unique().tolist() if str(x).strip()]) \
                     if '排名类型' in data_store['df'].columns else []
 
     return jsonify({

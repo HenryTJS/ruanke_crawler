@@ -132,6 +132,21 @@ const filterModule = {
         const dropdown = document.getElementById(dropdownId);
         const renderOptions = (filterText = '') => {
             dropdown.innerHTML = '';
+            // 全选选项
+            const allDiv = document.createElement('div');
+            allDiv.textContent = '全部';
+            allDiv.onclick = () => {
+                input.value = '';
+                select.value = '';
+                appState.selectedFilters[filterType] = [];
+                dropdown.style.display = 'none';
+                chartModule.fetchChartData();
+                overviewModule.fetchOverviewData();
+                chartModule.fetchWordcloudData();
+                chartModule.fetchMajorWordcloudData();
+            };
+            dropdown.appendChild(allDiv);
+
             const options = appState.filterOptions[filterType] || [];
             const filteredOptions = options.filter(option => 
                 option.toLowerCase().includes(filterText.toLowerCase())
@@ -153,7 +168,7 @@ const filterModule = {
                     chartModule.fetchChartData();
                     overviewModule.fetchOverviewData();
                     chartModule.fetchWordcloudData();
-                    chartModule.fetchMajorWordcloudData(); // 添加专业词云数据更新
+                    chartModule.fetchMajorWordcloudData();
                 };
                 dropdown.appendChild(div);
             });
@@ -177,7 +192,7 @@ const filterModule = {
                 chartModule.fetchChartData();
                 overviewModule.fetchOverviewData();
                 chartModule.fetchWordcloudData();
-                chartModule.fetchMajorWordcloudData(); // 添加专业词云数据更新
+                chartModule.fetchMajorWordcloudData();
             }
         });
         renderOptions();
@@ -241,7 +256,6 @@ const chartModule = {
         window.addEventListener('resize', () => this.handleResize());
     },
     initChartOptions() {
-        // 原有图表配置保持不变...
         this.pieOption = {
             tooltip: { trigger: 'item', formatter: '{b}: {c}所 ({d}%)' },
             series: [{
@@ -503,21 +517,28 @@ const chartModule = {
         };
     },
     fetchChartData() {
+        // 重点：如果rank_type未选或为“全部”，传空数组
+        let rankTypeForFilter = appState.selectedFilters.rank_type;
+        if (!rankTypeForFilter.length || rankTypeForFilter[0] === '全部') {
+            rankTypeForFilter = [];
+        }
         return utils.fetchData('/get_chart_data', {
             province: appState.selectedFilters.province,
             property: appState.selectedFilters.property,
             type: appState.selectedFilters.type,
             level: appState.selectedFilters.level,
-            rank_type: appState.selectedFilters.rank_type
+            rank_type: rankTypeForFilter
         }).then(data => {
             if (data) {
-                // 更新原有图表
                 this.updatePieChart(data.chart_data);
                 this.updateTreemapChart(data.bar_data);
                 this.updateLevelBarChart(data.level_data || []);
-                this.updateRankChart(data.rank_data || []);
-                
-                // 更新统计数字
+                // 重点：updateRankChart 传递当前rank_type
+                let rankType = appState.selectedFilters.rank_type[0];
+                if (!rankType || rankType === '全部') {
+                    rankType = '中国大学排名（主榜）';
+                }
+                this.updateRankChart(data.rank_data || [], rankType);
                 document.getElementById('type-count').textContent = data.chart_data.length;
                 document.getElementById('province-count').textContent = data.bar_data.length;
                 document.getElementById('rank-count').textContent = Math.min(50, data.rank_data ? data.rank_data.length : 0);
@@ -576,31 +597,22 @@ const chartModule = {
         }));
         this.levelChart.setOption(this.levelBarOption);
     },
-    updateRankChart(data) {
+    updateRankChart(data, rankType) {
         if (!data || data.length === 0) {
             this.rankChart.setOption(this.rankOption);
+            document.getElementById('rank-chart-title').textContent = rankType || '中国大学排名（主榜）';
             return;
         }
-        
-        // 根据筛选的排名类型设置标题
-        const rankType = appState.selectedFilters.rank_type[0] || '中国大学排名（主榜）';
-        document.getElementById('rank-chart-title').textContent = `${rankType}`;
-        
-        // 按得分降序排序
+        // 标题始终为当前rankType
+        document.getElementById('rank-chart-title').textContent = rankType || '中国大学排名（主榜）';
         data.sort((a, b) => b.score - a.score);
-        
-        // 只取前50名
         const displayData = data.slice(0, 50);
-        
         this.rankOption.xAxis.data = displayData.map(item => item.name);
         this.rankOption.series[0].data = displayData.map(item => item.score);
-        
-        // 更新dataZoom范围
         const totalItems = data.length;
         const visibleItems = Math.min(50, totalItems);
         this.rankOption.dataZoom[0].end = (visibleItems / totalItems) * 100;
         this.rankOption.dataZoom[1].end = (visibleItems / totalItems) * 100;
-        
         this.rankChart.setOption(this.rankOption);
     },
     updateWordcloudChart(data) {
