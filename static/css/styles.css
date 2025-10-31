@@ -25,33 +25,6 @@ body {
     background-clip: text;
     -webkit-text-fill-color: transparent;
 }
-.overview-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: stretch;
-    margin-bottom: 30px;
-    width: 100%;
-    gap: 20px;
-}
-.overview-item {
-    flex: 1;
-    background: rgba(255,255,255,0.08);
-    border-radius: 12px;
-    padding: 24px 0;
-    text-align: center;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-}
-.overview-title {
-    font-size: 20px;
-    color: #ffd700;
-    margin-bottom: 10px;
-    letter-spacing: 1px;
-}
-.overview-value {
-    font-size: 32px;
-    font-weight: bold;
-    color: #fff;
-}
 .search-bar-container {
     width: 100%;
     display: flex;
@@ -100,6 +73,41 @@ body {
     background-color: #74b9ff;
     color: #fff;
 }
+/* 新的主内容布局 - 三列布局，使用flex比例2:1:1，无间隙 */
+.main-content {
+    display: flex;
+    margin-bottom: 25px;
+    width: 100%;
+}
+
+.left-panel {
+    flex: 2; /* 占2份，即50% */
+    display: flex;
+    flex-direction: column;
+}
+
+.middle-panel {
+    flex: 1; /* 占1份，即25% */
+    display: flex;
+    flex-direction: column;
+}
+
+.right-panel {
+    flex: 1; /* 占1份，即25% */
+    display: flex;
+    flex-direction: column;
+}
+
+.map-container {
+    /* 保持1:1宽高比 */
+    aspect-ratio: 1;
+    width: 100%;
+}
+
+.map-container .chart-content {
+    height: calc(100% - 60px);
+}
+
 .dashboard-container {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
@@ -108,56 +116,149 @@ body {
 }
 .chart-container {
     background: transparent;
-    border-radius: 8px;
     padding: 20px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    transition: all 0.3s ease;
-}
-.chart-container:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
-}
-.chart-header {
+    /* 让每个容器都是正方形 */
+    aspect-ratio: 1;
+    width: 100%;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
+    flex-direction: column;
 }
-.chart-title {
-    font-size: 22px;
-    font-weight: bold;
-    color: #74b9ff;
-}
-.chart-total {
-    background: rgba(116, 185, 255, 0.2);
-    padding: 5px 15px;
-    border-radius: 20px;
-    font-weight: bold;
-    font-size: 16px;
+
+/* 特别针对表格容器的样式 */
+.right-panel .chart-container:last-child {
+    padding: 20px; /* 恢复标准内边距 */
 }
 .chart-content {
     height: 500px;
 }
+
+/* 图表内容高度 - 填充容器 */
+.chart-content {
+    height: 100%; /* 容器高度 */
+}
+
+/* 表格样式 - 完全限制在正方形容器内 */
+.table-container {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.university-table {
+    width: 100%;
+    height: 100%;
+    border-collapse: collapse;
+    font-size: 16px;
+    table-layout: fixed;
+}
+
+.university-table thead {
+    height: 40px;
+    display: block;
+    width: 100%;
+}
+
+.university-table tbody {
+    height: calc(100% - 40px);
+    display: block;
+    width: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.university-table thead tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+}
+
+.university-table tbody tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+}
+
+.university-table th,
+.university-table td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    width: 20%;
+}
+
+.university-table th {
+    background: rgba(116, 185, 255, 0.2);
+    color: #74b9ff;
+    font-weight: bold;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.university-table td {
+    color: #fff;
+}
+
+.university-table tbody tr:hover {
+    background: rgba(116, 185, 255, 0.1);
+}
+
+.university-table tbody tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+/* 自定义滚动条样式 */
+.table-container::-webkit-scrollbar,
+.university-table tbody::-webkit-scrollbar {
+    width: 4px; /* 更细的滚动条 */
+}
+
+.table-container::-webkit-scrollbar-track,
+.university-table tbody::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 2px;
+}
+
+.table-container::-webkit-scrollbar-thumb,
+.university-table tbody::-webkit-scrollbar-thumb {
+    background: rgba(116, 185, 255, 0.6);
+    border-radius: 2px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover,
+.university-table tbody::-webkit-scrollbar-thumb:hover {
+    background: rgba(116, 185, 255, 0.8);
+}
+
 .footer {
     text-align: center;
     margin-top: 30px;
     color: #ccc;
 }
-@media (max-width: 768px) {
-    .dashboard-container {
-        grid-template-columns: 1fr !important;
+@media (max-width: 1200px) {
+    .main-content {
+        flex-direction: column;
+        height: auto;
     }
-    .chart-container {
-        width: 100%;
-        min-width: 0;
-        height: 500px;
+    
+    .left-panel,
+    .middle-panel,
+    .right-panel {
+        flex: none;
+        height: auto;
     }
+    
+    .middle-panel,
+    .right-panel {
+        gap: 15px;
+    }
+    
     .chart-content {
-        width: 100% !important;
-        min-width: 0;
+        height: 500px !important;
     }
+    
     .search-bar-container {
         flex-direction: column;
     }

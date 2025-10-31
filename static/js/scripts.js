@@ -1,7 +1,7 @@
 const appState = {
-    filterOptions: { province: [], property: [], type: [], level: [], rank_type: [] },
-    selectedFilters: { province: [], property: [], type: [], level: [], rank_type: [] },
-    colorMaps: { type: {}, province: {}, property: {}, level: {}, rank_type: {}, affiliation: {}, ratio: {} },
+    filterOptions: { province: [], property: [], type: [], rank_type: [] },
+    selectedFilters: { province: [], property: [], type: [], rank_type: [] },
+    colorMaps: { type: {}, province: {}, property: {}, rank_type: {}, affiliation: {}, ratio: {} },
     currentSubjectType: '顶尖学科',
     currentMajorType: 'A+专业'
 };
@@ -33,44 +33,22 @@ const utils = {
     }
 };
 const colorManager = {
-    assignUniqueColors(typeList, provinceList, propertyList, levelList, rankTypeList, affiliationList) {
+    assignUniqueColors(typeList, provinceList, propertyList, rankTypeList, affiliationList) {
         const colorPool = utils.generateDistinctColors(
             typeList.length + provinceList.length + propertyList.length + 
-            levelList.length + rankTypeList.length + affiliationList.length + 10
+            rankTypeList.length + affiliationList.length + 10
         );
         let index = 0;
         
         appState.colorMaps.type = Object.fromEntries(typeList.map((t) => [t, colorPool[index++]]));
         appState.colorMaps.province = Object.fromEntries(provinceList.map((p) => [p, colorPool[index++]]));
         appState.colorMaps.property = Object.fromEntries(propertyList.map((f) => [f, colorPool[index++]]));
-        appState.colorMaps.level = Object.fromEntries(levelList.map((l) => [l, colorPool[index++]]));
         appState.colorMaps.rank_type = Object.fromEntries(rankTypeList.map((r) => [r, colorPool[index++]]));
         appState.colorMaps.affiliation = Object.fromEntries(affiliationList.map((a) => [a, colorPool[index++]]));
     }
 };
 const filterModule = {
     init() {
-        this.initSearchableSelect(
-            'search-province', 
-            'search-province-input', 
-            'search-province-dropdown', 
-            '搜索省份...', 
-            'province'
-        );
-        this.initSearchableSelect(
-            'search-type', 
-            'search-type-input', 
-            'search-type-dropdown', 
-            '搜索院校类型...', 
-            'type'
-        );
-        this.initSearchableSelect(
-            'search-level', 
-            'search-level-input', 
-            'search-level-dropdown', 
-            '搜索办学层次...', 
-            'level'
-        );
         this.initSearchableSelect(
             'search-property', 
             'search-property-input', 
@@ -85,46 +63,6 @@ const filterModule = {
             '搜索排名类型...', 
             'rank_type'
         );
-        
-        // 初始化学科类型选择器
-        this.initSubjectTypeSelector();
-        
-        // 初始化专业类型选择器
-        this.initMajorTypeSelector();
-    },
-    initSubjectTypeSelector() {
-        const buttons = document.querySelectorAll('#chart-wordcloud .subject-type-btn');
-        buttons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                // 移除所有按钮的active类
-                buttons.forEach(b => b.classList.remove('active'));
-                // 给当前点击的按钮添加active类
-                btn.classList.add('active');
-                // 更新当前选择的学科类型
-                appState.currentSubjectType = btn.dataset.type;
-                // 更新显示的标签
-                document.getElementById('subject-type-label').textContent = appState.currentSubjectType;
-                // 获取词云数据
-                chartModule.fetchWordcloudData();
-            });
-        });
-    },
-    initMajorTypeSelector() {
-        const buttons = document.querySelectorAll('#chart-major-wordcloud .subject-type-btn');
-        buttons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                // 移除所有按钮的active类
-                buttons.forEach(b => b.classList.remove('active'));
-                // 给当前点击的按钮添加active类
-                btn.classList.add('active');
-                // 更新当前选择的专业类型
-                appState.currentMajorType = btn.dataset.type;
-                // 更新显示的标签
-                document.getElementById('major-type-label').textContent = appState.currentMajorType;
-                // 获取专业词云数据
-                chartModule.fetchMajorWordcloudData();
-            });
-        });
     },
     initSearchableSelect(selectId, inputId, dropdownId, placeholder, filterType) {
         const input = document.getElementById(inputId);
@@ -141,9 +79,7 @@ const filterModule = {
                 appState.selectedFilters[filterType] = [];
                 dropdown.style.display = 'none';
                 chartModule.fetchChartData();
-                overviewModule.fetchOverviewData();
-                chartModule.fetchWordcloudData();
-                chartModule.fetchMajorWordcloudData();
+                chartModule.fetchUniversityTableData();
             };
             dropdown.appendChild(allDiv);
 
@@ -166,7 +102,6 @@ const filterModule = {
                     dropdown.style.display = 'none';
                     appState.selectedFilters[filterType] = [option];
                     chartModule.fetchChartData();
-                    overviewModule.fetchOverviewData();
                     chartModule.fetchWordcloudData();
                     chartModule.fetchMajorWordcloudData();
                 };
@@ -190,9 +125,7 @@ const filterModule = {
                 appState.selectedFilters[filterType] = [];
                 dropdown.style.display = 'none';
                 chartModule.fetchChartData();
-                overviewModule.fetchOverviewData();
-                chartModule.fetchWordcloudData();
-                chartModule.fetchMajorWordcloudData();
+                chartModule.fetchUniversityTableData();
             }
         });
         renderOptions();
@@ -201,11 +134,13 @@ const filterModule = {
         return fetch('/get_options')
             .then(response => response.json())
             .then(data => {
+                // 合并level和property选项
+                const combinedProperty = [...(data.property || []), ...(data.level || [])];
+                
                 appState.filterOptions = {
                     province: data.province,
-                    property: data.property,
+                    property: combinedProperty,
                     type: data.type,
-                    level: data.level,
                     rank_type: data.rank_type || [],
                     affiliation: data.affiliation || [],
                     year: data.year || []
@@ -214,7 +149,6 @@ const filterModule = {
                     appState.filterOptions.type,
                     appState.filterOptions.province,
                     appState.filterOptions.property,
-                    appState.filterOptions.level,
                     appState.filterOptions.rank_type,
                     appState.filterOptions.affiliation
                 );
@@ -223,37 +157,56 @@ const filterModule = {
             });
     }
 };
-const overviewModule = {
-    fetchOverviewData() {
-        return utils.fetchData('/get_overview', {
-            province: appState.selectedFilters.province,
-            property: appState.selectedFilters.property,
-            type: appState.selectedFilters.type,
-            level: appState.selectedFilters.level,
-            rank_type: appState.selectedFilters.rank_type
-        }).then(data => {
-            if (data) {
-                document.getElementById('overview-total').textContent = data.total;
-                document.getElementById('overview-benke').textContent = data.benke;
-                document.getElementById('overview-985').textContent = data['985'];
-                document.getElementById('overview-211').textContent = data['211'];
-                document.getElementById('overview-doubletop').textContent = data.doubletop;
-            }
-        });
-    }
-};
 const chartModule = {
     init() {
         // 初始化所有图表
         this.pieChart = echarts.init(document.getElementById('chart-pie'));
-        this.treemapChart = echarts.init(document.getElementById('chart-treemap'));
+        this.mapChart = echarts.init(document.getElementById('chart-map'));
         this.levelChart = echarts.init(document.getElementById('chart-level'));
         this.rankChart = echarts.init(document.getElementById('chart-rank'));
-        this.wordcloudChart = echarts.init(document.getElementById('wordcloud-chart'));
-        this.majorWordcloudChart = echarts.init(document.getElementById('major-wordcloud-chart'));
         
         this.initChartOptions();
+        this.initMapClickEvents();
+        this.initPieClickEvents();
         window.addEventListener('resize', () => this.handleResize());
+    },
+    // 颜色线性插值辅助函数
+    getGradientColor(ratio, startColor, endColor) {
+        // 将十六进制颜色转换为RGB
+        const hexToRgb = (hex) => {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        };
+        
+        // 将RGB转换为十六进制
+        const rgbToHex = (r, g, b) => {
+            return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+        };
+        
+        const startRgb = hexToRgb(startColor);
+        const endRgb = hexToRgb(endColor);
+        
+        if (!startRgb || !endRgb) return startColor;
+        
+        const r = Math.round(startRgb.r + (endRgb.r - startRgb.r) * ratio);
+        const g = Math.round(startRgb.g + (endRgb.g - startRgb.g) * ratio);
+        const b = Math.round(startRgb.b + (endRgb.b - startRgb.b) * ratio);
+        
+        return rgbToHex(r, g, b);
+    },
+    // 生成随机颜色函数
+    generateRandomColor() {
+        const colors = [
+            '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57',
+            '#ff9ff3', '#54a0ff', '#5f27cd', '#00d2d3', '#ff9f43',
+            '#10ac84', '#ee5a24', '#0984e3', '#6c5ce7', '#a29bfe',
+            '#fd79a8', '#fdcb6e', '#e17055', '#00b894', '#e84393'
+        ];
+        return colors[Math.floor(Math.random() * colors.length)];
     },
     initChartOptions() {
         this.pieOption = {
@@ -276,22 +229,36 @@ const chartModule = {
             backgroundColor: 'transparent'
         };
         
-        this.treemapOption = {
-            tooltip: { formatter: '{b}: {c}所' },
-            series: [{
-                type: 'treemap',
-                roam: false,
-                nodeClick: false,
-                label: {
-                    show: true,
-                    formatter: '{b}\n{c}所',
-                    color: '#fff',
-                    fontSize: 16,
-                    fontWeight: 'bold'
+        this.mapOption = {
+            tooltip: {
+                trigger: 'item',
+                formatter: '{b}<br/>院校数量: {c}'
+            },
+            visualMap: {
+                min: 0,
+                max: 200,
+                left: 'left',
+                top: 'bottom',
+                text: ['多','少'],
+                inRange: {
+                    color: ['#e0f7fa', '#26a69a', '#00695c']
                 },
-                itemStyle: { gapWidth: 1 },
-                upperLabel: { show: false },
-                breadcrumb: { show: false },
+                calculable: true,
+                textStyle: { color: '#fff' }
+            },
+            series: [{
+                name: '省份院校数量分布',
+                type: 'map',
+                map: 'china',
+                roam: false,
+                zoom: 1.25,
+                label: {
+                    show: false,
+                    color: '#fff'
+                },
+                emphasis: {
+                    label: { show: true, color: '#fff' }
+                },
                 data: []
             }],
             backgroundColor: 'transparent'
@@ -344,27 +311,22 @@ const chartModule = {
             dataZoom: [
                 {
                     type: 'slider',
-                    show: true,
+                    show: false, // 隐藏滑条显示
                     xAxisIndex: [0],
                     start: 0,
-                    end: 50, // 默认显示50个
-                    height: 20,
-                    bottom: 10,
-                    handleIcon: 'M10.7,11.9v-1.3H9.3v1.3c-4.9,0.3-8.8,4.4-8.8,9.4c0,5,3.9,9.1,8.8,9.4v1.3h1.3v-1.3c4.9-0.3,8.8-4.4,8.8-9.4C19.5,16.3,15.6,12.2,10.7,11.9z M13.3,24.4H6.7V23h6.6V24.4z M13.3,19.6H6.7v-1.4h6.6V19.6z',
-                    handleSize: '80%',
-                    handleStyle: {
-                        color: '#fff',
-                        shadowBlur: 3,
-                        shadowColor: 'rgba(0, 0, 0, 0.6)',
-                        shadowOffsetX: 2,
-                        shadowOffsetY: 2
-                    }
+                    end: 15, // 默认显示15个数据点
+                    minSpan: 15, // 最小显示15个数据点
+                    maxSpan: 15, // 最大显示15个数据点
+                    height: 0, // 高度设为0隐藏
+                    bottom: 0
                 },
                 {
                     type: 'inside',
                     xAxisIndex: [0],
                     start: 0,
-                    end: 50,
+                    end: 15,
+                    minSpan: 15,
+                    maxSpan: 15,
                     zoomOnMouseWheel: false,
                     moveOnMouseMove: true,
                     moveOnMouseWheel: true
@@ -434,87 +396,54 @@ const chartModule = {
             backgroundColor: 'transparent'
         };
         
-        // 学科词云图配置
-        this.wordcloudOption = {
-            tooltip: {
-                show: true,
-                formatter: function (params) {
-                    return `${params.name}: ${params.value}个${appState.currentSubjectType}`;
-                }
-            },
-            series: [{
-                type: 'wordCloud',
-                shape: 'circle',
-                left: 'center',
-                top: 'center',
-                width: '90%',
-                height: '90%',
-                sizeRange: [12, 60],
-                rotationRange: [-45, 45],
-                rotationStep: 45,
-                gridSize: 8,
-                drawOutOfBound: false,
-                textStyle: {
-                    color: function () {
-                        return 'rgb(' + [
-                            Math.round(Math.random() * 160),
-                            Math.round(Math.random() * 160),
-                            Math.round(Math.random() * 160)
-                        ].join(',') + ')';
-                    }
-                },
-                emphasis: {
-                    focus: 'self',
-                    textStyle: {
-                        shadowBlur: 10,
-                        shadowColor: '#333'
-                    }
-                },
-                data: []
-            }],
-            backgroundColor: 'transparent'
-        };
+    },
+    initMapClickEvents() {
+        // 为地图添加点击事件
+        this.mapChart.on('click', (params) => {
+            if (params.componentType === 'series' && params.seriesType === 'map') {
+                const provinceName = params.name;
+                this.toggleProvinceSelection(provinceName);
+            }
+        });
+    },
+    toggleProvinceSelection(provinceName) {
+        const currentSelections = appState.selectedFilters.province || [];
         
-        // 专业词云图配置
-        this.majorWordcloudOption = {
-            tooltip: {
-                show: true,
-                formatter: function (params) {
-                    return `${params.name}: ${params.value}个${appState.currentMajorType}`;
-                }
-            },
-            series: [{
-                type: 'wordCloud',
-                shape: 'circle',
-                left: 'center',
-                top: 'center',
-                width: '90%',
-                height: '90%',
-                sizeRange: [12, 60],
-                rotationRange: [-45, 45],
-                rotationStep: 45,
-                gridSize: 8,
-                drawOutOfBound: false,
-                textStyle: {
-                    color: function () {
-                        return 'rgb(' + [
-                            Math.round(Math.random() * 160),
-                            Math.round(Math.random() * 160),
-                            Math.round(Math.random() * 160)
-                        ].join(',') + ')';
-                    }
-                },
-                emphasis: {
-                    focus: 'self',
-                    textStyle: {
-                        shadowBlur: 10,
-                        shadowColor: '#333'
-                    }
-                },
-                data: []
-            }],
-            backgroundColor: 'transparent'
-        };
+        if (currentSelections.includes(provinceName)) {
+            // 如果已选中，则取消选择
+            appState.selectedFilters.province = currentSelections.filter(item => item !== provinceName);
+        } else {
+            // 如果未选中，则添加选择
+            appState.selectedFilters.province = [...currentSelections, provinceName];
+        }
+        
+        // 更新图表数据
+        this.fetchChartData();
+        this.fetchUniversityTableData();
+    },
+    initPieClickEvents() {
+        // 为饼图添加点击事件
+        this.pieChart.on('click', (params) => {
+            if (params.componentType === 'series' && params.seriesType === 'pie') {
+                const typeName = params.name;
+                this.toggleTypeSelection(typeName);
+            }
+        });
+    },
+    toggleTypeSelection(typeName) {
+        const currentSelections = appState.selectedFilters.type || [];
+        
+        if (currentSelections.includes(typeName)) {
+            // 如果已选中，则取消选择
+            appState.selectedFilters.type = currentSelections.filter(item => item !== typeName);
+        } else {
+            // 如果未选中，则添加选择
+            appState.selectedFilters.type = [...currentSelections, typeName];
+        }
+        
+        // 更新图表数据
+        this.fetchChartData();
+        this.fetchUniversityTableData();
     },
     fetchChartData() {
         // 重点：如果rank_type未选或为“全部”，传空数组
@@ -526,12 +455,11 @@ const chartModule = {
             province: appState.selectedFilters.province,
             property: appState.selectedFilters.property,
             type: appState.selectedFilters.type,
-            level: appState.selectedFilters.level,
             rank_type: rankTypeForFilter
         }).then(data => {
             if (data) {
                 this.updatePieChart(data.chart_data);
-                this.updateTreemapChart(data.bar_data);
+                this.updateMapChart(data.bar_data);
                 this.updateLevelBarChart(data.level_data || []);
                 // 重点：updateRankChart 传递当前rank_type
                 let rankType = appState.selectedFilters.rank_type[0];
@@ -539,99 +467,170 @@ const chartModule = {
                     rankType = '中国大学排名（主榜）';
                 }
                 this.updateRankChart(data.rank_data || [], rankType);
-                document.getElementById('type-count').textContent = data.chart_data.length;
-                document.getElementById('province-count').textContent = data.bar_data.length;
-                document.getElementById('rank-count').textContent = Math.min(50, data.rank_data ? data.rank_data.length : 0);
             }
         });
     },
-    fetchWordcloudData() {
-        return utils.fetchData('/get_wordcloud_data', {
+    fetchUniversityTableData() {
+        return utils.fetchData('/get_university_table_data', {
             province: appState.selectedFilters.province,
             property: appState.selectedFilters.property,
             type: appState.selectedFilters.type,
-            level: appState.selectedFilters.level,
-            rank_type: appState.selectedFilters.rank_type,
-            subject_type: appState.currentSubjectType
+            rank_type: appState.selectedFilters.rank_type
         }).then(data => {
             if (data) {
-                this.updateWordcloudChart(data);
-            }
-        });
-    },
-    fetchMajorWordcloudData() {
-        return utils.fetchData('/get_major_wordcloud_data', {
-            province: appState.selectedFilters.province,
-            property: appState.selectedFilters.property,
-            type: appState.selectedFilters.type,
-            level: appState.selectedFilters.level,
-            rank_type: appState.selectedFilters.rank_type,
-            major_type: appState.currentMajorType
-        }).then(data => {
-            if (data) {
-                this.updateMajorWordcloudChart(data);
+                this.updateUniversityTable(data);
             }
         });
     },
     // 原有图表更新方法
     updatePieChart(data) {
-        this.pieOption.series[0].data = data.map(item => ({
-            ...item,
-            itemStyle: { color: appState.colorMaps.type[item.name] }
-        }));
-        this.pieOption.color = appState.filterOptions.type.map(t => appState.colorMaps.type[t]);
+        // 为院校类型分布创建渐变色配置
+        const maxValue = Math.max(...data.map(item => item.value));
+        const minValue = Math.min(...data.map(item => item.value));
+        
+        // 生成随机颜色（从白色渐变到随机颜色）
+        const randomColor = this.generateRandomColor();
+        
+        // 处理饼图数据，为选中的类型添加特殊样式
+        const selectedTypes = appState.selectedFilters.type || [];
+        
+        this.pieOption.series[0].data = data.map(item => {
+            // 根据数值在最大值和最小值之间进行线性插值
+            const ratio = maxValue === minValue ? 0.5 : (item.value - minValue) / (maxValue - minValue);
+            // 从白色渐变到随机颜色
+            const color = this.getGradientColor(ratio, '#ffffff', randomColor);
+            
+            const isSelected = selectedTypes.includes(item.name);
+            
+            return {
+                ...item,
+                itemStyle: { 
+                    color: isSelected ? '#74b9ff' : color,
+                    borderColor: isSelected ? '#fff' : 'transparent',
+                    borderWidth: isSelected ? 2 : 0
+                }
+            };
+        });
+        
         this.pieChart.setOption(this.pieOption);
     },
-    updateTreemapChart(data) {
-        this.treemapOption.series[0].data = data.map(item => ({
-            name: item.name,
-            value: item.value,
-            itemStyle: { color: appState.colorMaps.province[item.name] }
-        }));
-        this.treemapChart.setOption(this.treemapOption);
+    updateMapChart(data) {
+        if (!this.mapChart) {
+            console.error('地图图表未初始化');
+            return;
+        }
+        
+        // 处理地图数据，为选中的省份添加特殊样式
+        const selectedProvinces = appState.selectedFilters.province || [];
+        const processedData = data.map(item => {
+            const isSelected = selectedProvinces.includes(item.name);
+            return {
+                ...item,
+                itemStyle: isSelected ? {
+                    areaColor: '#74b9ff',
+                    borderColor: '#fff',
+                    borderWidth: 2
+                } : {}
+            };
+        });
+        
+        this.mapOption.series[0].data = processedData;
+        const maxValue = Math.max(1, ...data.map(item => item.value));
+        this.mapOption.visualMap.max = Math.ceil(maxValue / 10) * 10;
+        
+        // 为地图图表生成随机颜色渐变
+        const randomColor = this.generateRandomColor();
+        this.mapOption.visualMap.inRange.color = ['#ffffff', randomColor];
+        
+        this.mapChart.setOption(this.mapOption);
     },
     updateLevelBarChart(data) {
-        this.levelBarOption.series[0].data = data.map(item => ({
-            value: item.value,
-            itemStyle: { color: appState.colorMaps.level[item.name] }
-        }));
+        // 为办学层次分布创建渐变色配置
+        const maxValue = Math.max(...data.map(item => item.value));
+        const minValue = Math.min(...data.map(item => item.value));
+        
+        // 生成随机颜色（从白色渐变到随机颜色）
+        const randomColor = this.generateRandomColor();
+        
+        this.levelBarOption.series[0].data = data.map(item => {
+            // 根据数值在最大值和最小值之间进行线性插值
+            const ratio = maxValue === minValue ? 0.5 : (item.value - minValue) / (maxValue - minValue);
+            // 从白色渐变到随机颜色
+            const color = this.getGradientColor(ratio, '#ffffff', randomColor);
+            
+            return {
+                value: item.value,
+                itemStyle: { color: color }
+            };
+        });
+        
         this.levelChart.setOption(this.levelBarOption);
     },
     updateRankChart(data, rankType) {
         if (!data || data.length === 0) {
             this.rankChart.setOption(this.rankOption);
-            document.getElementById('rank-chart-title').textContent = rankType || '中国大学排名（主榜）';
             return;
         }
-        // 标题始终为当前rankType
-        document.getElementById('rank-chart-title').textContent = rankType || '中国大学排名（主榜）';
         data.sort((a, b) => b.score - a.score);
-        const displayData = data.slice(0, 50);
-        this.rankOption.xAxis.data = displayData.map(item => item.name);
-        this.rankOption.series[0].data = displayData.map(item => item.score);
+        // 图表包含所有数据，但通过dataZoom控制显示范围
+        this.rankOption.xAxis.data = data.map(item => item.name);
+        this.rankOption.series[0].data = data.map(item => item.score);
         const totalItems = data.length;
-        const visibleItems = Math.min(50, totalItems);
-        this.rankOption.dataZoom[0].end = (visibleItems / totalItems) * 100;
-        this.rankOption.dataZoom[1].end = (visibleItems / totalItems) * 100;
+        
+        if (totalItems <= 15) {
+            // 如果数据少于等于15个，显示所有数据
+            this.rankOption.dataZoom[0].start = 0;
+            this.rankOption.dataZoom[0].end = 100;
+            this.rankOption.dataZoom[0].minSpan = 100;
+            this.rankOption.dataZoom[0].maxSpan = 100;
+            this.rankOption.dataZoom[1].start = 0;
+            this.rankOption.dataZoom[1].end = 100;
+            this.rankOption.dataZoom[1].minSpan = 100;
+            this.rankOption.dataZoom[1].maxSpan = 100;
+            console.log(`数据≤15个，显示所有: ${totalItems}个`);
+        } else {
+            // 如果数据超过15个，显示前15个，可以左右拖动
+            const spanPercent = (15 / totalItems) * 100;
+            this.rankOption.dataZoom[0].start = 0;
+            this.rankOption.dataZoom[0].end = spanPercent;
+            this.rankOption.dataZoom[0].minSpan = spanPercent;
+            this.rankOption.dataZoom[0].maxSpan = spanPercent;
+            this.rankOption.dataZoom[1].start = 0;
+            this.rankOption.dataZoom[1].end = spanPercent;
+            this.rankOption.dataZoom[1].minSpan = spanPercent;
+            this.rankOption.dataZoom[1].maxSpan = spanPercent;
+            console.log(`数据>15个，显示15个, 可左右拖动查看其他数据`);
+        }
+        
         this.rankChart.setOption(this.rankOption);
     },
-    updateWordcloudChart(data) {
-        this.wordcloudOption.series[0].data = data;
-        this.wordcloudChart.setOption(this.wordcloudOption);
-    },
-    updateMajorWordcloudChart(data) {
-        this.majorWordcloudOption.series[0].data = data;
-        this.majorWordcloudChart.setOption(this.majorWordcloudOption);
+    updateUniversityTable(data) {
+        const tbody = document.getElementById('university-table-body');
+        
+        if (!tbody) return;
+        
+        // 清空表格内容
+        tbody.innerHTML = '';
+        
+        // 填充数据
+        data.forEach((university, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${university.name}</td>
+                <td>${university.province || '-'}</td>
+                <td>${university.type || '-'}</td>
+                <td>${university.level || '-'}</td>
+            `;
+            tbody.appendChild(row);
+        });
     },
     
     handleResize() {
         // 所有图表响应窗口大小变化
         this.pieChart.resize();
-        this.treemapChart.resize();
+        this.mapChart.resize();
         this.levelChart.resize();
         this.rankChart.resize();
-        this.wordcloudChart.resize();
-        this.majorWordcloudChart.resize();
     }
 };
 window.addEventListener('DOMContentLoaded', function() {
@@ -639,7 +638,6 @@ window.addEventListener('DOMContentLoaded', function() {
     filterModule.fetchFilterOptions().then(() => {
         chartModule.fetchChartData();
         overviewModule.fetchOverviewData();
-        chartModule.fetchWordcloudData();
-        chartModule.fetchMajorWordcloudData(); // 初始化专业词云数据
+        chartModule.fetchUniversityTableData(); // 初始化大学表格数据
     });
 });

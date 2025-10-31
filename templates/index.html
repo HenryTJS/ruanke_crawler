@@ -3,52 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>中国大学数据大屏</title>
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="../static/js/echarts.min.js"></script>
+    <script>
+        fetch('../static/json/geojson.json')
+        .then(res => res.json())
+        .then(geoJson => {
+            echarts.registerMap('china', geoJson);
+            // 这里初始化所有图表
+            if (window.chartModule && chartModule.mapChart) {
+                chartModule.mapChart.setOption(chartModule.mapOption);
+            }
+        })
+        .catch(error => {
+            console.error('加载地图数据失败:', error);
+        });
+    </script>
     <link rel="stylesheet" href="../static/css/styles.css">
 </head>
 <body>
     <div class="dashboard-header">
         <h1 class="dashboard-title">中国大学数据可视化分析平台</h1>
     </div>
-    <div class="overview-container">
-        <div class="overview-item">
-            <div class="overview-title">院校总数</div>
-            <div class="overview-value" id="overview-total">0</div>
-        </div>
-        <div class="overview-item">
-            <div class="overview-title">普通本科数量</div>
-            <div class="overview-value" id="overview-benke">0</div>
-        </div>
-        <div class="overview-item">
-            <div class="overview-title">985数量</div>
-            <div class="overview-value" id="overview-985">0</div>
-        </div>
-        <div class="overview-item">
-            <div class="overview-title">211数量</div>
-            <div class="overview-value" id="overview-211">0</div>
-        </div>
-        <div class="overview-item">
-            <div class="overview-title">双一流数量</div>
-            <div class="overview-value" id="overview-doubletop">0</div>
-        </div>
-    </div>
     <div class="search-bar-container">
-        <div class="searchable-select">
-            <input type="text" id="search-province-input" placeholder="搜索省份...">
-            <select id="search-province" style="display: none;"></select>
-            <div class="dropdown" id="search-province-dropdown"></div>
-        </div>
-        <div class="searchable-select">
-            <input type="text" id="search-type-input" placeholder="搜索院校类型...">
-            <select id="search-type" style="display: none;"></select>
-            <div class="dropdown" id="search-type-dropdown"></div>
-        </div>
-        <div class="searchable-select">
-            <input type="text" id="search-level-input" placeholder="搜索办学层次...">
-            <select id="search-level" style="display: none;"></select>
-            <div class="dropdown" id="search-level-dropdown"></div>
-        </div>
         <div class="searchable-select">
             <input type="text" id="search-property-input" placeholder="搜索院校特性...">
             <select id="search-property" style="display: none;"></select>
@@ -60,63 +40,48 @@
             <div class="dropdown" id="search-rank-type-dropdown"></div>
         </div>
     </div>
-    <!-- 上方三个图表容器 -->
-    <div class="dashboard-container">
-        <div class="chart-container">
-            <div class="chart-header">
-                <h2 class="chart-title">院校类型分布</h2>
-                <div class="chart-total">类型总数: <span id="type-count">0</span></div>
+    <!-- 主要内容区域：三列布局 flex比例 2:1:1，无间隙，每个容器为正方形 -->
+    <div class="main-content">
+        <!-- 左侧：中国地图容器 (flex: 2, 正方形容器) -->
+        <div class="left-panel">
+            <div class="chart-container map-container">
+                <div class="chart-content" id="chart-map"></div>
             </div>
-            <div class="chart-content" id="chart-pie"></div>
         </div>
-        <div class="chart-container">
-            <div class="chart-header">
-                <h2 class="chart-title">省份院校数量分布</h2>
-                <div class="chart-total">省份数量: <span id="province-count">0</span></div>
+        
+        <!-- 中间：图表容器列 (flex: 1, 每个容器为正方形) -->
+        <div class="middle-panel">
+            <div class="chart-container">
+                <div class="chart-content" id="chart-pie"></div>
             </div>
-            <div class="chart-content" id="chart-treemap"></div>
+            <div class="chart-container">
+                <div class="chart-content" id="chart-level"></div>
+            </div>
         </div>
-        <div class="chart-container">
-            <div class="chart-header">
-                <h2 class="chart-title">办学层次分布</h2>
+        
+        <!-- 右侧：图表容器列 (flex: 1, 每个容器为正方形) -->
+        <div class="right-panel">
+            <div class="chart-container">
+                <div class="chart-content" id="chart-rank"></div>
             </div>
-            <div class="chart-content" id="chart-level"></div>
-        </div>
-    </div>
-    <div class="dashboard-container">
-        <div class="chart-container">
-            <div class="chart-header">
-                <h2 class="chart-title" id="rank-chart-title">中国大学排名</h2>
-                <div class="chart-total">显示数量: <span id="rank-count">0</span></div>
-            </div>
-            <div class="chart-content" id="chart-rank"></div>
-        </div>
-        <div class="chart-container">
-            <div class="chart-header">
-                <h2 class="chart-title">中国最好学科排名</h2>
-                <div class="chart-total">学科类型: <span id="subject-type-label">顶尖学科</span></div>
-            </div>
-            <div class="chart-content" id="chart-wordcloud">
-                <div class="subject-type-selector">
-                    <button class="subject-type-btn active" data-type="顶尖学科">顶尖学科</button>
-                    <button class="subject-type-btn" data-type="一流学科">一流学科</button>
-                    <button class="subject-type-btn" data-type="上榜学科">上榜学科</button>
+            <div class="chart-container">
+                <div class="chart-content" id="university-table">
+                    <div class="table-container">
+                        <table class="university-table">
+                            <thead>
+                                <tr>
+                                    <th>大学名称</th>
+                                    <th>省份</th>
+                                    <th>类型</th>
+                                    <th>办学层次</th>
+                                </tr>
+                            </thead>
+                            <tbody id="university-table-body">
+                                <!-- 动态填充数据 -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <div id="wordcloud-chart" style="width: 100%; height: 400px;"></div>
-            </div>
-        </div>
-        <div class="chart-container">
-            <div class="chart-header">
-                <h2 class="chart-title">中国大学专业排名</h2>
-                <div class="chart-total">专业类型: <span id="major-type-label">A+专业</span></div>
-            </div>
-            <div class="chart-content" id="chart-major-wordcloud">
-                <div class="subject-type-selector">
-                    <button class="subject-type-btn active" data-type="A+专业">A+专业</button>
-                    <button class="subject-type-btn" data-type="A类专业">A类专业</button>
-                    <button class="subject-type-btn" data-type="上榜专业">上榜专业</button>
-                </div>
-                <div id="major-wordcloud-chart" style="width: 100%; height: 400px;"></div>
             </div>
         </div>
     </div>
@@ -124,6 +89,5 @@
         <p>中国高等教育数据分析平台 © 2025 | 数据可视化大屏</p>
     </div>
     <script src="../static/js/scripts.js"></script>
-    <script src="../static/js/echarts-wordcloud.min.js"></script>
 </body>
 </html>
