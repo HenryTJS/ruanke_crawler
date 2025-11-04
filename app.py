@@ -29,11 +29,6 @@ class DataLoader:
             query = "SELECT * FROM universities"
             data_store['df'] = pd.read_sql_query(query, conn)
             
-            # 确保学科和专业列存在，如果不存在则创建空列
-            for col in ['顶尖学科', '一流学科', '上榜学科', 'A+专业', 'A类专业', '上榜专业']:
-                if col not in data_store['df'].columns:
-                    data_store['df'][col] = 0
-                    
             # 关闭数据库连接
             conn.close()
 
@@ -135,7 +130,7 @@ class DataStatistics:
         rank_data = []
         if '排名类型' in filtered_df.columns and '得分' in filtered_df.columns and '中文名称' in filtered_df.columns:
             selected_rank_type = filter_params.get('rank_type', [])
-            # 如果未选或选了“全部”，只显示主榜
+            # 如果未选或选了"全部"，只显示主榜
             if not selected_rank_type or selected_rank_type[0] in ['', '全部']:
                 rank_df = filtered_df[filtered_df['排名类型'] == '中国大学排名（主榜）']
             else:
@@ -146,7 +141,8 @@ class DataStatistics:
                 rank_data = [{
                     'name': row['中文名称'],
                     'score': float(row['得分']),
-                    'rank_type': row['排名类型']
+                    'rank_type': row['排名类型'],
+                    'ranking': int(row['排名'])
                 } for _, row in rank_df.iterrows()]
 
         return {

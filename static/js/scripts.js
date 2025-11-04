@@ -1,9 +1,7 @@
 const appState = {
     filterOptions: { province: [], property: [], type: [], rank_type: [] },
     selectedFilters: { province: [], property: [], type: [], rank_type: [] },
-    colorMaps: { type: {}, province: {}, property: {}, rank_type: {}, affiliation: {}, ratio: {} },
-    currentSubjectType: '顶尖学科',
-    currentMajorType: 'A+专业'
+    colorMaps: { type: {}, province: {}, property: {}, rank_type: {}, affiliation: {}, ratio: {} }
 };
 const utils = {
     generateDistinctColors(total) {
@@ -102,8 +100,6 @@ const filterModule = {
                     dropdown.style.display = 'none';
                     appState.selectedFilters[filterType] = [option];
                     chartModule.fetchChartData();
-                    chartModule.fetchWordcloudData();
-                    chartModule.fetchMajorWordcloudData();
                 };
                 dropdown.appendChild(div);
             });
@@ -298,7 +294,9 @@ const chartModule = {
                 trigger: 'axis',
                 formatter: function(params) {
                     const data = params[0];
-                    return `${data.name}<br/>排名: ${data.dataIndex + 1}<br/>得分: ${data.value}`;
+                    // 从数据集中提取排名字段
+                    const ranking = data.data.ranking;
+                    return `${data.name}<br/>排名: ${ranking}<br/>得分: ${data.value}`;
                 }
             },
             grid: {
@@ -574,7 +572,11 @@ const chartModule = {
         data.sort((a, b) => b.score - a.score);
         // 图表包含所有数据，但通过dataZoom控制显示范围
         this.rankOption.xAxis.data = data.map(item => item.name);
-        this.rankOption.series[0].data = data.map(item => item.score);
+        // 将排名信息存储在每个数据点中，以便在tooltip中访问
+        this.rankOption.series[0].data = data.map(item => ({
+            value: item.score,
+            ranking: item.ranking
+        }));
         const totalItems = data.length;
         
         if (totalItems <= 15) {
