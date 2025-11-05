@@ -61,11 +61,22 @@ const filterModule = {
             '搜索排名类型...', 
             'rank_type'
         );
+        // 应用筛选按钮：点击时才触发请求
+        const applyBtn = document.getElementById('apply-filters-btn');
+        if (applyBtn) {
+            applyBtn.addEventListener('click', () => {
+                chartModule.fetchChartData();
+                chartModule.fetchUniversityTableData();
+            });
+        }
     },
     initSearchableSelect(selectId, inputId, dropdownId, placeholder, filterType) {
         const input = document.getElementById(inputId);
         const select = document.getElementById(selectId);
         const dropdown = document.getElementById(dropdownId);
+        let isMouseInsideDropdown = false;
+        dropdown.addEventListener('mouseenter', () => { isMouseInsideDropdown = true; });
+        dropdown.addEventListener('mouseleave', () => { isMouseInsideDropdown = false; });
         const renderOptions = (filterText = '') => {
             dropdown.innerHTML = '';
             // 全选选项
@@ -75,9 +86,8 @@ const filterModule = {
                 input.value = '';
                 select.value = '';
                 appState.selectedFilters[filterType] = [];
-                dropdown.style.display = 'none';
-                chartModule.fetchChartData();
-                chartModule.fetchUniversityTableData();
+                dropdown.style.display = 'block';
+                // 不立即请求，等待点击“应用筛选”按钮
             };
             dropdown.appendChild(allDiv);
 
@@ -93,13 +103,24 @@ const filterModule = {
             }
             filteredOptions.forEach(option => {
                 const div = document.createElement('div');
-                div.textContent = option;
+                const selectedList = appState.selectedFilters[filterType] || [];
+                const isChecked = selectedList.includes(option);
+                // 显示勾选标记
+                div.innerHTML = `${isChecked ? '✓ ' : ''}${option}`;
                 div.onclick = () => {
-                    input.value = option;
-                    select.value = option;
-                    dropdown.style.display = 'none';
-                    appState.selectedFilters[filterType] = [option];
-                    chartModule.fetchChartData();
+                    const set = new Set(appState.selectedFilters[filterType] || []);
+                    if (set.has(option)) {
+                        set.delete(option);
+                    } else {
+                        set.add(option);
+                    }
+                    appState.selectedFilters[filterType] = Array.from(set);
+                    // 更新输入框展示
+                    input.value = (appState.selectedFilters[filterType] || []).join(', ');
+                    select.value = '';
+                    // 重新渲染以刷新勾选状态，并保持下拉开启；使用空过滤展示全部选项
+                    renderOptions('');
+                    dropdown.style.display = 'block';
                 };
                 dropdown.appendChild(div);
             });
@@ -112,7 +133,9 @@ const filterModule = {
         });
         input.addEventListener('input', (e) => renderOptions(e.target.value));
         input.addEventListener('blur', () => {
-            setTimeout(() => dropdown.style.display = 'none', 200);
+            setTimeout(() => {
+                if (!isMouseInsideDropdown) dropdown.style.display = 'none';
+            }, 150);
         });
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
@@ -120,8 +143,13 @@ const filterModule = {
                 select.value = '';
                 appState.selectedFilters[filterType] = [];
                 dropdown.style.display = 'none';
-                chartModule.fetchChartData();
-                chartModule.fetchUniversityTableData();
+                // 不立即请求
+            }
+        });
+        // 点击页面其他区域时，收起下拉
+        document.addEventListener('mousedown', (e) => {
+            if (!dropdown.contains(e.target) && e.target !== input) {
+                dropdown.style.display = 'none';
             }
         });
         renderOptions();
@@ -130,8 +158,12 @@ const filterModule = {
         return fetch('/get_options')
             .then(response => response.json())
             .then(data => {
-                // 合并level和property选项
-                const combinedProperty = [...(data.property || []), ...(data.level || [])];
+                // 合并 院校特性 + 办学层次 + 院校类型 到同一个可多选搜索框
+                const combinedProperty = [
+                    ...(data.property || []),
+                    ...(data.level || []),
+                    ...(data.type || [])
+                ];
                 
                 appState.filterOptions = {
                     province: data.province,
@@ -155,15 +187,13 @@ const filterModule = {
 };
 const chartModule = {
     init() {
-        // 初始化所有图表
-        this.pieChart = echarts.init(document.getElementById('chart-pie'));
+        // 初始化图表
+        this.featureBarChart = echarts.init(document.getElementById('chart-pie')); // 复用原玫瑰图容器
         this.mapChart = echarts.init(document.getElementById('chart-map'));
-        this.levelChart = echarts.init(document.getElementById('chart-level'));
         this.rankChart = echarts.init(document.getElementById('chart-rank'));
         
         this.initChartOptions();
         this.initMapClickEvents();
-        this.initPieClickEvents();
         window.addEventListener('resize', () => this.handleResize());
     },
     // 颜色线性插值辅助函数
@@ -205,22 +235,47 @@ const chartModule = {
         return colors[Math.floor(Math.random() * colors.length)];
     },
     initChartOptions() {
-        this.pieOption = {
-            tooltip: { trigger: 'item', formatter: '{b}: {c}所 ({d}%)' },
-            series: [{
-                name: '院校类型分布',
-                type: 'pie',
-                radius: ['20%', '80%'],
-                roseType: 'area',
-                avoidLabelOverlap: false,
-                itemStyle: { borderRadius: 10, borderColor: '#0c2461', borderWidth: 2 },
-                label: { show: true, formatter: '{b}: {c}所', color: '#fff' },
-                emphasis: {
-                    label: { show: true, fontSize: '16', fontWeight: 'bold' },
-                    itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' }
+        // 新：横向柱状图（院校特性占比）
+        this.featureBarOption = {
+            tooltip: { 
+                trigger: 'axis', 
+                axisPointer: { type: 'shadow' },
+                formatter: (params) => {
+                    const d = params[0];
+                    return `${d.name}: ${d.value}%`;
+                }
+            },
+            grid: { left: '5%', right: '5%', top: '10%', bottom: '5%', containLabel: true },
+            xAxis: { type: 'value', axisLabel: { color: '#fff', formatter: '{value}%' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.2)' } } },
+            yAxis: { type: 'category', data: [], axisLabel: { color: '#fff' }, inverse: true },
+            dataZoom: [
+                {
+                    type: 'slider',
+                    show: false,
+                    yAxisIndex: [0],
+                    start: 0,
+                    end: 100,
+                    minSpan: 100,
+                    maxSpan: 100,
                 },
-                labelLine: { show: true },
-                data: []
+                {
+                    type: 'inside',
+                    yAxisIndex: [0],
+                    start: 0,
+                    end: 100,
+                    minSpan: 100,
+                    maxSpan: 100,
+                    moveOnMouseMove: true,
+                    moveOnMouseWheel: true,
+                    zoomOnMouseWheel: false
+                }
+            ],
+            series: [{
+                type: 'bar',
+                data: [],
+                barWidth: 18,
+                itemStyle: { borderRadius: [0, 8, 8, 0] },
+                label: { show: true, position: 'right', color: '#fff', formatter: '{c}%' }
             }],
             backgroundColor: 'transparent'
         };
@@ -260,34 +315,7 @@ const chartModule = {
             backgroundColor: 'transparent'
         };
         
-        this.levelBarOption = {
-            tooltip: { 
-                trigger: 'axis', 
-                axisPointer: { type: 'shadow' },
-                formatter: '{b}: {c}所'
-            },
-            xAxis: {
-                type: 'category',
-                data: ["普通本科", "职业本科", "高职（专科）"],
-                axisLabel: { color: '#fff', fontWeight: 'bold' }
-            },
-            yAxis: { type: 'value', axisLabel: { color: '#fff' } },
-            series: [{
-                name: '办学层次分布',
-                type: 'bar',
-                barWidth: 50,
-                itemStyle: { borderRadius: [8, 8, 0, 0] },
-                label: {
-                    show: true,
-                    position: 'top',
-                    color: '#fff',
-                    fontWeight: 'bold',
-                    formatter: '{c}'
-                },
-                data: []
-            }],
-            backgroundColor: 'transparent'
-        };
+        // 删除原“办学层次”条形图
         
         this.rankOption = {
             tooltip: {
@@ -419,30 +447,7 @@ const chartModule = {
         this.fetchChartData();
         this.fetchUniversityTableData();
     },
-    initPieClickEvents() {
-        // 为饼图添加点击事件
-        this.pieChart.on('click', (params) => {
-            if (params.componentType === 'series' && params.seriesType === 'pie') {
-                const typeName = params.name;
-                this.toggleTypeSelection(typeName);
-            }
-        });
-    },
-    toggleTypeSelection(typeName) {
-        const currentSelections = appState.selectedFilters.type || [];
-        
-        if (currentSelections.includes(typeName)) {
-            // 如果已选中，则取消选择
-            appState.selectedFilters.type = currentSelections.filter(item => item !== typeName);
-        } else {
-            // 如果未选中，则添加选择
-            appState.selectedFilters.type = [...currentSelections, typeName];
-        }
-        
-        // 更新图表数据
-        this.fetchChartData();
-        this.fetchUniversityTableData();
-    },
+    // 删除饼图点击筛选（已移除玫瑰图）
     fetchChartData() {
         // 重点：如果rank_type未选或为“全部”，传空数组
         let rankTypeForFilter = appState.selectedFilters.rank_type;
@@ -456,9 +461,8 @@ const chartModule = {
             rank_type: rankTypeForFilter
         }).then(data => {
             if (data) {
-                this.updatePieChart(data.chart_data);
+                this.updateFeatureBarChart(data.feature_bar || []);
                 this.updateMapChart(data.bar_data);
-                this.updateLevelBarChart(data.level_data || []);
                 // 重点：updateRankChart 传递当前rank_type
                 let rankType = appState.selectedFilters.rank_type[0];
                 if (!rankType || rankType === '全部') {
@@ -480,37 +484,38 @@ const chartModule = {
             }
         });
     },
-    // 原有图表更新方法
-    updatePieChart(data) {
-        // 为院校类型分布创建渐变色配置
-        const maxValue = Math.max(...data.map(item => item.value));
-        const minValue = Math.min(...data.map(item => item.value));
-        
-        // 生成随机颜色（从白色渐变到随机颜色）
-        const randomColor = this.generateRandomColor();
-        
-        // 处理饼图数据，为选中的类型添加特殊样式
-        const selectedTypes = appState.selectedFilters.type || [];
-        
-        this.pieOption.series[0].data = data.map(item => {
-            // 根据数值在最大值和最小值之间进行线性插值
-            const ratio = maxValue === minValue ? 0.5 : (item.value - minValue) / (maxValue - minValue);
-            // 从白色渐变到随机颜色
-            const color = this.getGradientColor(ratio, '#ffffff', randomColor);
-            
-            const isSelected = selectedTypes.includes(item.name);
-            
-            return {
-                ...item,
-                itemStyle: { 
-                    color: isSelected ? '#74b9ff' : color,
-                    borderColor: isSelected ? '#fff' : 'transparent',
-                    borderWidth: isSelected ? 2 : 0
-                }
-            };
-        });
-        
-        this.pieChart.setOption(this.pieOption);
+    // 新：更新院校特性占比横向柱状图
+    updateFeatureBarChart(data) {
+        // 确保降序（后端已降序，这里再兜底）
+        const sorted = [...data].sort((a, b) => b.value - a.value);
+        const names = sorted.map(d => d.name);
+        const values = sorted.map(d => d.value);
+        this.featureBarOption.yAxis.data = names;
+        this.featureBarOption.series[0].data = values;
+        // 数据缩放：最多显示12条，可滚动
+        const total = names.length;
+        if (total <= 12) {
+            this.featureBarOption.dataZoom[0].start = 0;
+            this.featureBarOption.dataZoom[0].end = 100;
+            this.featureBarOption.dataZoom[0].minSpan = 100;
+            this.featureBarOption.dataZoom[0].maxSpan = 100;
+            this.featureBarOption.dataZoom[1].start = 0;
+            this.featureBarOption.dataZoom[1].end = 100;
+            this.featureBarOption.dataZoom[1].minSpan = 100;
+            this.featureBarOption.dataZoom[1].maxSpan = 100;
+        } else {
+            const span = (12 / total) * 100;
+            // yAxis.inverse = true 时，start=0, end=span 表示顶部区间
+            this.featureBarOption.dataZoom[0].start = 0;
+            this.featureBarOption.dataZoom[0].end = span;
+            this.featureBarOption.dataZoom[0].minSpan = span;
+            this.featureBarOption.dataZoom[0].maxSpan = span;
+            this.featureBarOption.dataZoom[1].start = 0;
+            this.featureBarOption.dataZoom[1].end = span;
+            this.featureBarOption.dataZoom[1].minSpan = span;
+            this.featureBarOption.dataZoom[1].maxSpan = span;
+        }
+        this.featureBarChart.setOption(this.featureBarOption);
     },
     updateMapChart(data) {
         if (!this.mapChart) {
@@ -533,8 +538,9 @@ const chartModule = {
         });
         
         this.mapOption.series[0].data = processedData;
-        const maxValue = Math.max(1, ...data.map(item => item.value));
-        this.mapOption.visualMap.max = Math.ceil(maxValue / 10) * 10;
+        const maxValue = Math.max(0, ...data.map(item => item.value));
+        const roundedMax = maxValue;
+        this.mapOption.visualMap.max = roundedMax;
         
         // 为地图图表生成随机颜色渐变
         const randomColor = this.generateRandomColor();
@@ -547,7 +553,7 @@ const chartModule = {
         const maxValue = Math.max(...data.map(item => item.value));
         const minValue = Math.min(...data.map(item => item.value));
         
-        // 生成随机颜色（从白色渐变到随机颜色）
+        // 生成随机颜色
         const randomColor = this.generateRandomColor();
         
         this.levelBarOption.series[0].data = data.map(item => {
@@ -562,7 +568,7 @@ const chartModule = {
             };
         });
         
-        this.levelChart.setOption(this.levelBarOption);
+        // 已删除
     },
     updateRankChart(data, rankType) {
         if (!data || data.length === 0) {
@@ -629,9 +635,8 @@ const chartModule = {
     
     handleResize() {
         // 所有图表响应窗口大小变化
-        this.pieChart.resize();
+        this.featureBarChart.resize();
         this.mapChart.resize();
-        this.levelChart.resize();
         this.rankChart.resize();
     }
 };

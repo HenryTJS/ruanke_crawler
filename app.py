@@ -31,21 +31,12 @@ class DataLoader:
             
             # 关闭数据库连接
             conn.close()
-
-            # 统一处理所有object列，把"null"、"None"、空字符串都转为NaN
-            for col in data_store['df'].select_dtypes(include='object').columns:
-                data_store['df'][col] = data_store['df'][col].replace(
-                    to_replace=['null', 'None', 'NULL', 'nan', 'NaN', ' '], value=pd.NA
-                )
-                data_store['df'][col] = data_store['df'][col].apply(
-                    lambda x: pd.NA if (pd.isna(x) or str(x).strip() == '' or str(x).lower() in ['null', 'none', 'nan']) else x
-                )
             
         except Exception as e:
             print(f"数据加载错误: {e}")
             data_store['df'] = pd.DataFrame()
 
-# 数据筛选模块（保持不变）
+# 数据筛选模块
 class DataFilter:
     @staticmethod
     def filter_dataframe(filter_params):
@@ -96,7 +87,7 @@ class DataFilter:
             props.update([i.strip() for i in str(row['院校特色']).split('/') if i.strip()])
         return any(p in props for p in selected_properties)
 
-# 数据统计模块（保持不变）
+# 数据统计模块
 class DataStatistics:
     
     @staticmethod
@@ -104,27 +95,63 @@ class DataStatistics:
         filtered_df = DataFilter.filter_dataframe(filter_params)
 
         if filtered_df.empty:
-            return {"chart_data": [], "bar_data": [], "level_data": [], "total_count": 0, "rank_data": []}
+            return {"feature_bar": [], "bar_data": [], "total_count": 0, "rank_data": []}
 
-        # 饼图数据（院校类型分布）
-        type_counts = filtered_df['院校类型'].value_counts().reset_index()
-        type_counts.columns = ['院校类型', '数量']
-        pie_data = [{"name": row["院校类型"], "value": row["数量"]} 
-                   for _, row in type_counts.iterrows()]
+        # 新：院校特性占比（横向柱状图数据）
+        selected_properties = filter_params.get('property', []) or []
+        # 基础集：按省份、类型、排名类型过滤，并且若选择了院校特性，也将其作为筛选范围
+        base_params = {
+            'province': filter_params.get('province', []),
+            'type': filter_params.get('type', []),
+            'rank_type': filter_params.get('rank_type', []),
+            'property': selected_properties
+        }
+        base_df = DataFilter.filter_dataframe(base_params)
+        feature_bar = []
+        total_base = len(base_df)
+        if total_base > 0:
+            # 无论是否选择特性，都从当前范围自动枚举全部特性/类型/层次
+            props_detected = set()
+            if '院校特色' in base_df.columns:
+                base_df['院校特色'].dropna().apply(
+                    lambda x: [props_detected.add(i.strip()) for i in str(x).split('/') if i.strip()]
+                )
+            if '院校归属' in base_df.columns:
+                base_df['院校归属'].dropna().apply(
+                    lambda x: props_detected.add(str(x).strip()) if str(x).strip() else None
+                )
+            if '院校类型' in base_df.columns:
+                base_df['院校类型'].dropna().apply(
+                    lambda x: props_detected.add(str(x).strip()) if str(x).strip() else None
+                )
+            if '办学层次' in base_df.columns:
+                base_df['办学层次'].dropna().apply(
+                    lambda x: props_detected.add(str(x).strip()) if str(x).strip() else None
+                )
+            props_for_bar = sorted([p for p in props_detected if p])
+            # 计数时对每行做“任一匹配”以避免同一行重复计数
+            def row_has_prop(row, prop):
+                has_feature = False
+                if '院校特色' in row and pd.notna(row['院校特色']):
+                    has_feature = any(i.strip() == prop for i in str(row['院校特色']).split('/') if i.strip())
+                if not has_feature and '院校归属' in row and pd.notna(row['院校归属']):
+                    has_feature = str(row['院校归属']).strip() == prop
+                if not has_feature and '院校类型' in row and pd.notna(row['院校类型']):
+                    has_feature = str(row['院校类型']).strip() == prop
+                if not has_feature and '办学层次' in row and pd.notna(row['办学层次']):
+                    has_feature = str(row['办学层次']).strip() == prop
+                return has_feature
+            for prop in props_for_bar:
+                count = int(base_df.apply(lambda r: row_has_prop(r, prop), axis=1).sum())
+                percent = round((count / total_base) * 100, 2) if total_base else 0
+                feature_bar.append({"name": prop, "value": percent, "count": int(count), "total": int(total_base)})
 
-        # 省份分布数据
+        # 省份分布数据（地图）
         province_counts = filtered_df['所在省份'].value_counts().reset_index()
         province_counts.columns = ['省份', '数量']
         province_counts = province_counts.sort_values(by='数量', ascending=False)
         bar_data = [{"name": standardize_province_name(row["省份"]), "value": row["数量"]}
                     for _, row in province_counts.iterrows()]
-
-        # 办学层次分布数据
-        level_list = ["普通本科", "职业本科", "高职（专科）"]
-        level_counts = filtered_df['办学层次'].value_counts().reindex(level_list, fill_value=0).reset_index()
-        level_counts.columns = ['办学层次', '数量']
-        level_data = [{"name": row["办学层次"], "value": row["数量"]} 
-                    for _, row in level_counts.iterrows()]
         
         # 排名数据
         rank_data = []
@@ -137,7 +164,7 @@ class DataStatistics:
                 rank_df = filtered_df[filtered_df['排名类型'] == selected_rank_type[0]]
             if not rank_df.empty:
                 rank_df = rank_df.sort_values(by='得分', ascending=False)
-                # 移除100个数据的限制，返回所有符合条件的数据
+                # 返回所有符合条件的数据
                 rank_data = [{
                     'name': row['中文名称'],
                     'score': float(row['得分']),
@@ -145,10 +172,11 @@ class DataStatistics:
                     'ranking': int(row['排名'])
                 } for _, row in rank_df.iterrows()]
 
+        # 按占比降序排序
+        feature_bar = sorted(feature_bar, key=lambda x: x["value"], reverse=True)
         return {
-            "chart_data": pie_data,
+            "feature_bar": feature_bar,
             "bar_data": bar_data,
-            "level_data": level_data,
             "total_count": len(filtered_df),
             "rank_data": rank_data
         }
@@ -160,6 +188,10 @@ class DataStatistics:
         
         if filtered_df.empty:
             return []
+        
+        # 始终以院校代码为排序依据（若存在该列）
+        if '院校代码' in filtered_df.columns:
+            filtered_df = filtered_df.sort_values(by='院校代码', na_position='last')
         
         # 选择需要的列
         columns = ['中文名称', '所在省份', '院校类型', '办学层次']
@@ -192,9 +224,7 @@ class DataStatistics:
         
         table_data = table_data.rename(columns=column_mapping)
         
-        # 按排名排序（如果有排名的话）
-        if 'rank' in table_data.columns:
-            table_data = table_data.sort_values(by='rank', na_position='last')
+        # 删除表格层面的其它排序逻辑：以院校代码排序已在上方完成
         
         # 转换为字典列表，处理NaN值
         result = []
@@ -224,7 +254,7 @@ def get_options():
     province_list = sorted([x for x in data_store['df']['所在省份'].dropna().unique().tolist() if str(x).strip()]) \
                    if '所在省份' in data_store['df'].columns else []
     
-    # 提取院校类型列表
+    # 提取院校类型列表（基础）
     type_list = sorted([x for x in data_store['df']['院校类型'].dropna().unique().tolist() if str(x).strip()]) \
                if '院校类型' in data_store['df'].columns else []
     
@@ -252,6 +282,9 @@ def get_options():
     
     property_list = sorted([x for x in property_set if str(x).strip()])
     
+    # 按需合并：将“院校特性”加入原“院校类型”的16个选项中（去重）
+    type_list = sorted(list({*type_list, *property_list}))
+    
     # 提取排名类型列表
     rank_type_list = sorted([x for x in data_store['df']['排名类型'].dropna().unique().tolist() if str(x).strip()]) \
                     if '排名类型' in data_store['df'].columns else []
@@ -259,7 +292,7 @@ def get_options():
     return jsonify({
         "province": province_list,
         "type": type_list,
-        "level": level_list,  # 保留用于前端合并
+        "level": level_list,
         "property": property_list,
         "rank_type": rank_type_list
     })

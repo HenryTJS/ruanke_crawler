@@ -36,6 +36,9 @@ def main():
     text = requests.get(jsfilepath).text
     univ = re.findall(finduniv, text)[0]
     univ_data = remove(7, univdata2(univ, text))
+    univ_data = univ_data.applymap(
+        lambda v: pd.NA if isinstance(v, str) and (v.strip() == '' or v.strip().lower() == 'null') else v
+    )
     
     univ_data["办学层次"] = univ_data["办学层次"].replace({
         "10": "普通本科",

@@ -73,6 +73,28 @@ body {
     background-color: #74b9ff;
     color: #fff;
 }
+.search-actions {
+    display: flex;
+    align-items: center;
+}
+.apply-btn {
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: none;
+    background: #74b9ff;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(116, 185, 255, 0.35);
+    transition: all 0.2s ease;
+}
+.apply-btn:hover {
+    background: #5dade2;
+    box-shadow: 0 6px 14px rgba(116, 185, 255, 0.45);
+}
+.apply-btn:active {
+    transform: scale(0.98);
+}
 /* 新的主内容布局 - 三列布局，使用flex比例2:1:1，无间隙 */
 .main-content {
     display: flex;
