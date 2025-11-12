@@ -224,8 +224,6 @@ class DataStatistics:
         
         table_data = table_data.rename(columns=column_mapping)
         
-        # 删除表格层面的其它排序逻辑：以院校代码排序已在上方完成
-        
         # 转换为字典列表，处理NaN值
         result = []
         for _, row in table_data.iterrows():

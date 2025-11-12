@@ -5,30 +5,65 @@ from data import number, finduniv, ry, rr, rv, change
 from function import remove, univdata2, univdata, listname, save_to_database
 
 
-def _fetch_rank_data(index):
+def rank():
+    rank_data = []
+    for index in [0, 3]:
+        path_url = f'https://www.shanghairanking.cn/_nuxt/static/{number}/rankings/{rv[index]}/{ry[index][-1]}/payload.js'
+        text = requests.get(path_url).text
+        namelist = listname(index, text)
+        find_univ_pattern = re.compile(rr[index][3])
+        
+        rank_list = []
+        for k, d in enumerate(namelist[0]):
+            if '总榜' in namelist[1][k] or '名单' in namelist[1][k]:
+                continue
+                
+            univ = univdata(ry[index][-1], index, d, find_univ_pattern)
+            df_selected = univ[['univNameCn', 'score', 'ranking']].rename(
+                columns={'univNameCn': '中文名称', 'score': '得分', 'ranking': '排名'}
+            )
+            df_selected['排名类型'] = namelist[1][k]
+            rank_list.append(df_selected)
+        
+        rank_data.append(pd.concat(rank_list, ignore_index=True).dropna())
+    
+    return pd.concat(rank_data, ignore_index=True)
+
+def subject():
+    index = 1
     path_url = f'https://www.shanghairanking.cn/_nuxt/static/{number}/rankings/{rv[index]}/{ry[index][-1]}/payload.js'
     text = requests.get(path_url).text
     namelist = listname(index, text)
     find_univ_pattern = re.compile(rr[index][3])
     
-    rank_list = []
+    subject_list = []
     for k, d in enumerate(namelist[0]):
-        if '总榜' in namelist[1][k] or '名单' in namelist[1][k]:
-            continue
-            
         univ = univdata(ry[index][-1], index, d, find_univ_pattern)
-        df_selected = univ[['univNameCn', 'score', 'ranking']].rename(
-            columns={'univNameCn': '中文名称', 'score': '得分', 'ranking': '排名'}
+        df_selected = univ[['univNameCn', 'score', 'rankPctTop']].rename(
+            columns={'univNameCn': '中文名称', 'score': '得分', 'rankPctTop': '层次'}
         )
-        df_selected['排名类型'] = namelist[1][k]
-        rank_list.append(df_selected)
+        df_selected['学科'] = namelist[1][k]
+        subject_list.append(df_selected)
     
-    return pd.concat(rank_list, ignore_index=True).dropna()
+    return pd.concat(subject_list, ignore_index=True).dropna()
 
+def major():
+    index = 2
+    path_url = f'https://www.shanghairanking.cn/_nuxt/static/{number}/rankings/{rv[index]}/{ry[index][-1]}/payload.js'
+    text = requests.get(path_url).text
+    namelist = listname(index, text)
+    find_univ_pattern = re.compile(rr[index][3])
 
-def rank():
-    rank_data = [_fetch_rank_data(i) for i in [0, 3]]
-    return pd.concat(rank_data, ignore_index=True)
+    major_list = []
+    for k, d in enumerate(namelist[0]):
+        univ = univdata(ry[index][-1], index, d, find_univ_pattern)
+        df_selected = univ[['univNameCn', 'score', 'grade']].rename(
+            columns={'univNameCn': '中文名称', 'score': '得分', 'grade': '评级'}
+        )
+        df_selected['专业'] = namelist[1][k]
+        major_list.append(df_selected)
+    
+    return pd.concat(major_list, ignore_index=True).dropna()
 
 
 def main():
@@ -60,27 +95,19 @@ def main():
             
             # 直接查找其中文名称在change数组中对应更名后的大学名
             new_name = change.get(old_name)
+            new_name_rows = df_sorted[df_sorted['中文名称'] == new_name]
+            new_name_row_idx = new_name_rows.index[0]
             
-            if new_name:
-                # 查找新名称对应的行（应该有院校代码）
-                new_name_rows = df_sorted[df_sorted['中文名称'] == new_name]
-                
-                if not new_name_rows.empty:
-                    # 找到新名称对应的行（优先选择有院校代码的行）
-                    new_name_row_idx = new_name_rows.index[0]
-                    new_name_row = df_sorted.loc[new_name_row_idx]
-                    
-                    # 合并数据：优先使用新名称行的数据，但确保中文名称是新名称
-                    for col in df_sorted.columns:
-                        if col == '中文名称':
-                            df_sorted.loc[new_name_row_idx, col] = new_name
-                        elif pd.isna(df_sorted.loc[new_name_row_idx, col]) or df_sorted.loc[new_name_row_idx, col] == '':
-                            # 如果新名称行的该列为空，使用旧名称行的值
-                            if pd.notna(row[col]) and row[col] != '':
-                                df_sorted.loc[new_name_row_idx, col] = row[col]
-                    
-                    # 标记旧名称行需要删除
-                    indices_to_drop.append(idx)
+            # 合并数据：优先使用新名称行的数据，但确保中文名称是新名称
+            for col in df_sorted.columns:
+                if col == '中文名称':
+                    df_sorted.loc[new_name_row_idx, col] = new_name
+                elif pd.isna(df_sorted.loc[new_name_row_idx, col]) or df_sorted.loc[new_name_row_idx, col] == '':
+                    if pd.notna(row[col]) and row[col] != '':
+                        df_sorted.loc[new_name_row_idx, col] = row[col]
+            
+            # 标记旧名称行需要删除
+            indices_to_drop.append(idx)
     
     # 删除已合并的旧名称行
     if indices_to_drop:
@@ -89,6 +116,8 @@ def main():
     
     db_path = '中国大学数据集.db'
     save_to_database(df_sorted, db_path, 'universities')
+    save_to_database(subject(), db_path,'subjects')
+    save_to_database(major(), db_path,'majors')
 
 
 if __name__ == "__main__":

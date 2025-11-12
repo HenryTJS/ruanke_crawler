@@ -87,6 +87,8 @@ const filterModule = {
                 select.value = '';
                 appState.selectedFilters[filterType] = [];
                 dropdown.style.display = 'block';
+                // 重新渲染以清除所有勾选标记
+                renderOptions('');
                 // 不立即请求，等待点击“应用筛选”按钮
             };
             dropdown.appendChild(allDiv);
@@ -108,16 +110,30 @@ const filterModule = {
                 // 显示勾选标记
                 div.innerHTML = `${isChecked ? '✓ ' : ''}${option}`;
                 div.onclick = () => {
-                    const set = new Set(appState.selectedFilters[filterType] || []);
-                    if (set.has(option)) {
-                        set.delete(option);
+                    // 判断是多选还是单选：rank_type 单选，property 多选
+                    if (filterType === 'rank_type') {
+                        // 单选：直接设置为当前选项，如果已选中则清空
+                        if (isChecked) {
+                            appState.selectedFilters[filterType] = [];
+                            input.value = '';
+                        } else {
+                            appState.selectedFilters[filterType] = [option];
+                            input.value = option;
+                        }
+                        select.value = option || '';
                     } else {
-                        set.add(option);
+                        // 多选：切换选中状态
+                        const set = new Set(appState.selectedFilters[filterType] || []);
+                        if (set.has(option)) {
+                            set.delete(option);
+                        } else {
+                            set.add(option);
+                        }
+                        appState.selectedFilters[filterType] = Array.from(set);
+                        // 更新输入框展示
+                        input.value = (appState.selectedFilters[filterType] || []).join(', ');
+                        select.value = '';
                     }
-                    appState.selectedFilters[filterType] = Array.from(set);
-                    // 更新输入框展示
-                    input.value = (appState.selectedFilters[filterType] || []).join(', ');
-                    select.value = '';
                     // 重新渲染以刷新勾选状态，并保持下拉开启；使用空过滤展示全部选项
                     renderOptions('');
                     dropdown.style.display = 'block';
@@ -644,7 +660,6 @@ window.addEventListener('DOMContentLoaded', function() {
     chartModule.init();
     filterModule.fetchFilterOptions().then(() => {
         chartModule.fetchChartData();
-        overviewModule.fetchOverviewData();
         chartModule.fetchUniversityTableData(); // 初始化大学表格数据
     });
 });
