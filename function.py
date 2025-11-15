@@ -4,7 +4,8 @@ import requests
 import pandas as pd
 import json
 import sqlite3
-from data import rr, rn, rv, ry, number, findfunction, findoutput, dropcolumn, replacement
+import os
+from data import rr, rn, rv, findfunction, findoutput, dropcolumn, replacement, base_dir
 
 
 def convert(inp):
@@ -70,7 +71,6 @@ def get_url(i, j, d):
 def remove(i, df):
     columns_to_keep = [col for col in df.columns if col not in dropcolumn[i]]
     df = df[columns_to_keep]
-    
     col_mapping = {old_key: new_key for item in replacement for old_key, new_key in item.items()}
     return df.rename(columns=col_mapping)
 
@@ -151,7 +151,7 @@ def univdata2(univ, text):
     return pd.DataFrame(univ_data)
 
 
-def save_to_database(df: pd.DataFrame, db_path: str, table_name: str):
+def save_to_database(df, db_path, table_name):
     try:
         with sqlite3.connect(db_path) as conn:
             df.to_sql(table_name, conn, if_exists='replace', index=False)
@@ -160,33 +160,22 @@ def save_to_database(df: pd.DataFrame, db_path: str, table_name: str):
         print(f"保存到数据库时出错: {e}")
 
 
-def newsave1(i, years=None):
-    years = years or ry[i]
-    
-    for j in years:
-        path_url = f'https://www.shanghairanking.cn/_nuxt/static/{number}/rankings/{rv[i]}/{j}/payload.js'
-        response = requests.get(path_url)
-        response.raise_for_status()
-        
-        text = response.text
-        namelist = listname(i, text)
-        finduniv = re.compile(rr[i][3])
-        
-        for k, d in enumerate(namelist[0]):
-            univ_df = univdata(j, i, d, finduniv)
-            univ_df = remove(i, univ_df)
-            
-            db_path = f'{rn[i]}.db'
-            save_to_database(univ_df, db_path, f'{j}年{namelist[1][k]}')
-
-
-def newsave2(i, years=None):
-    years = years or ry[i]
+def newsave1(i, years):
+    path_url = os.path.join(base_dir, 'rankings', str(rv[i]), str(years), 'payload.js')
+    with open(path_url, 'r', encoding='utf-8') as file:
+        text = file.read()
+    namelist = listname(i, text)
     finduniv = re.compile(rr[i][3])
-    
-    for j in years:
-        univ_df = univdata(j, i, 0, finduniv)
+    for k, d in enumerate(namelist[0]):
+        univ_df = univdata(years, i, d, finduniv)
         univ_df = remove(i, univ_df)
-        
         db_path = f'{rn[i]}.db'
-        save_to_database(univ_df, db_path, f'{j}年')
+        save_to_database(univ_df, db_path, f'{years}年{namelist[1][k]}')
+
+
+def newsave2(i, years):
+    finduniv = re.compile(rr[i][3])
+    univ_df = univdata(years, i, 0, finduniv)
+    univ_df = remove(i, univ_df)
+    db_path = f'{rn[i]}.db'
+    save_to_database(univ_df, db_path, f'{years}年')
