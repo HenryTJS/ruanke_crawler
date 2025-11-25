@@ -1,0 +1,260 @@
+[
+    {
+        "number": "AS01",
+        "name": "理学",
+        "subfields": [
+            {
+                "number": "AS0101",
+                "name": "数学"
+            },
+            {
+                "number": "AS0102",
+                "name": "物理学"
+            },
+            {
+                "number": "AS0103",
+                "name": "化学"
+            },
+            {
+                "number": "AS0104",
+                "name": "地球科学"
+            },
+            {
+                "number": "AS0105",
+                "name": "地理学"
+            },
+            {
+                "number": "AS0106",
+                "name": "生态学"
+            },
+            {
+                "number": "AS0107",
+                "name": "海洋科学"
+            },
+            {
+                "number": "AS0108",
+                "name": "大气科学"
+            }
+        ]
+    },
+    {
+        "number": "AS02",
+        "name": "工学",
+        "subfields": [
+            {
+                "number": "AS0201",
+                "name": "机械工程"
+            },
+            {
+                "number": "AS0202",
+                "name": "电力电子工程"
+            },
+            {
+                "number": "AS0205",
+                "name": "控制科学与工程"
+            },
+            {
+                "number": "AS0206",
+                "name": "通信工程"
+            },
+            {
+                "number": "AS0207",
+                "name": "仪器科学"
+            },
+            {
+                "number": "AS0208",
+                "name": "生物医学工程"
+            },
+            {
+                "number": "AS0210",
+                "name": "计算机科学与工程"
+            },
+            {
+                "number": "AS0211",
+                "name": "土木工程"
+            },
+            {
+                "number": "AS0212",
+                "name": "化学工程"
+            },
+            {
+                "number": "AS0213",
+                "name": "材料科学与工程"
+            },
+            {
+                "number": "AS0214",
+                "name": "纳米科学与技术"
+            },
+            {
+                "number": "AS0215",
+                "name": "能源科学与工程"
+            },
+            {
+                "number": "AS0216",
+                "name": "环境科学与工程"
+            },
+            {
+                "number": "AS0217",
+                "name": "水资源工程"
+            },
+            {
+                "number": "AS0219",
+                "name": "食品科学与工程"
+            },
+            {
+                "number": "AS0220",
+                "name": "生物工程"
+            },
+            {
+                "number": "AS0221",
+                "name": "航空航天工程"
+            },
+            {
+                "number": "AS0222",
+                "name": "船舶与海洋工程"
+            },
+            {
+                "number": "AS0223",
+                "name": "交通运输工程"
+            },
+            {
+                "number": "AS0224",
+                "name": "遥感技术"
+            },
+            {
+                "number": "AS0226",
+                "name": "矿业工程"
+            },
+            {
+                "number": "AS0227",
+                "name": "冶金工程"
+            },
+            {
+                "number": "AS0228",
+                "name": "纺织科学与工程"
+            },
+            {
+                "number": "AS0229",
+                "name": "人工智能"
+            },
+            {
+                "number": "AS0230",
+                "name": "机器人科学与工程"
+            }
+        ]
+    },
+    {
+        "number": "AS03",
+        "name": "生命科学",
+        "subfields": [
+            {
+                "number": "AS0301",
+                "name": "生物学"
+            },
+            {
+                "number": "AS0302",
+                "name": "基础医学"
+            },
+            {
+                "number": "AS0303",
+                "name": "农学"
+            },
+            {
+                "number": "AS0304",
+                "name": "兽医学"
+            }
+        ]          
+    },
+    {
+        "number": "AS04",
+        "name": "医学",
+        "subfields": [
+            {
+                "number": "AS0401",
+                "name": "临床医学"
+            },
+            {
+                "number": "AS0402",
+                "name": "公共卫生"
+            },
+            {
+                "number": "AS0403",
+                "name": "口腔医学"
+            },
+            {
+                "number": "AS0404",
+                "name": "护理学"
+            },
+            {
+                "number": "AS0405",
+                "name": "医学技术"
+            },
+            {
+                "number": "AS0406",
+                "name": "药学"
+            }
+        ]
+    },
+    {
+        "number": "AS05",
+        "name": "社会科学",
+        "subfields": [
+            {
+                "number": "AS0501",
+                "name": "经济学"
+            },
+            {
+                "number": "AS0502",
+                "name": "统计学"
+            },
+            {
+                "number": "AS0503",
+                "name": "法学"
+            },
+            {
+                "number": "AS0504",
+                "name": "政治学"
+            },
+            {
+                "number": "AS0505",
+                "name": "社会学"
+            },
+            {
+                "number": "AS0506",
+                "name": "教育学"
+            },
+            {
+                "number": "AS0507",
+                "name": "新闻传播学"
+            },
+            {
+                "number": "AS0508",
+                "name": "心理学"
+            },
+            {
+                "number": "AS0509",
+                "name": "工商管理"
+            },
+            {
+                "number": "AS0510",
+                "name": "金融学"
+            },
+            {
+                "number": "AS0511",
+                "name": "管理学"
+            },
+            {
+                "number": "AS0512",
+                "name": "公共管理"
+            },
+            {
+                "number": "AS0513",
+                "name": "旅游休闲管理"
+            },
+            {
+                "number": "AS0515",
+                "name": "图书情报科学"
+            }
+        ]
+    }
+]
