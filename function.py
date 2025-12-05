@@ -4,8 +4,7 @@ import requests
 import pandas as pd
 import json
 import sqlite3
-import os
-from data import rr, rn, rv, findfunction, findoutput, dropcolumn, replacement, base_dir
+from data import rr, rn, rv, ry, findfunction, findoutput, dropcolumn, replacement
 
 
 def convert(inp):
@@ -160,11 +159,16 @@ def save_to_database(df, db_path, table_name):
         print(f"保存到数据库时出错: {e}")
 
 
+def read_table_to_dataframe(table_name):
+    conn = sqlite3.connect("subfield.db")
+    df = pd.read_sql_query(f"SELECT * FROM {table_name};", conn)
+    conn.close()
+    return df
+
+
 def newsave1(i, years):
-    path_url = os.path.join(base_dir, 'rankings', str(rv[i]), str(years), 'payload.js')
-    with open(path_url, 'r', encoding='utf-8') as file:
-        text = file.read()
-    namelist = listname(i, text)
+    df = read_table_to_dataframe(rv[i])
+    namelist = [df.iloc[:, -2].tolist(), df.iloc[:, -1].tolist()]
     finduniv = re.compile(rr[i][3])
     for k, d in enumerate(namelist[0]):
         univ_df = univdata(years, i, d, finduniv)
@@ -179,3 +183,35 @@ def newsave2(i, years):
     univ_df = remove(i, univ_df)
     db_path = f'{rn[i]}.db'
     save_to_database(univ_df, db_path, f'{years}年')
+
+
+def main():
+    while True:
+        print("\n请输入你要爬取的表格（按7退出）：")
+        print("0: 中国大学排名")
+        print("1: 中国最好学科排名")
+        print("2: 中国大学专业排名")
+        print("3: 中国高职院校排名")
+        print("4: 世界大学学术排名")
+        print("5: 世界一流学科排名")
+        print("6: 全球体育类院系学术排名")
+        user_input = input("请选择：")
+        
+        if convert(user_input) == 1:
+            table_index = int(user_input)
+            years = ry[table_index]
+            
+            if table_index in (4, 6):
+                newsave2(table_index, years)
+            else:
+                newsave1(table_index, years)
+                
+        elif convert(user_input) == 0:
+            print("输入有误，请重新输入。")
+        else:
+            print("下次见！")
+            break
+
+
+if __name__ == "__main__":
+    main()

@@ -6,90 +6,16 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>中国大学数据大屏</title>
+    <title>中国大学数据可视化</title>
     <script src="../static/js/echarts.min.js"></script>
-    <script>
-        fetch('../static/json/geojson.json')
-        .then(res => res.json())
-        .then(geoJson => {
-            echarts.registerMap('china', geoJson);
-            // 这里初始化所有图表
-            if (window.chartModule && chartModule.mapChart) {
-                chartModule.mapChart.setOption(chartModule.mapOption);
-            }
-        })
-        .catch(error => {
-            console.error('加载地图数据失败:', error);
-        });
-    </script>
     <link rel="stylesheet" href="../static/css/styles.css">
 </head>
 <body>
-    <div class="dashboard-header">
-        <h1 class="dashboard-title">中国大学数据可视化分析平台</h1>
-    </div>
-    <div class="search-bar-container">
-        <div class="searchable-select">
-            <input type="text" id="search-property-input" placeholder="搜索院校特性...">
-            <select id="search-property" style="display: none;"></select>
-            <div class="dropdown" id="search-property-dropdown"></div>
-        </div>
-        <div class="searchable-select">
-            <input type="text" id="search-rank-type-input" placeholder="搜索排名类型...">
-            <select id="search-rank-type" style="display: none;"></select>
-            <div class="dropdown" id="search-rank-type-dropdown"></div>
-        </div>
-        <div class="search-actions">
-            <button id="apply-filters-btn" class="apply-btn">应用筛选</button>
-        </div>
-    </div>
-    <!-- 主要内容区域：三列布局 flex比例 2:1:1，无间隙，每个容器为正方形 -->
-    <div class="main-content">
-        <!-- 左侧：中国地图容器 (flex: 2, 正方形容器) -->
-        <div class="left-panel">
-            <div class="chart-container map-container">
-                <div class="chart-content" id="chart-map"></div>
-            </div>
-        </div>
-        
-        <!-- 中间：图表容器列 (flex: 1, 每个容器为正方形) -->
-        <div class="middle-panel">
-            <div class="chart-container">
-                <div class="chart-content" id="chart-pie"></div>
-            </div>
-            <div class="chart-container">
-                <div class="chart-content" id="chart-level"></div>
-            </div>
-        </div>
-        
-        <!-- 右侧：图表容器列 (flex: 1, 每个容器为正方形) -->
-        <div class="right-panel">
-            <div class="chart-container">
-                <div class="chart-content" id="chart-rank"></div>
-            </div>
-            <div class="chart-container">
-                <div class="chart-content" id="university-table">
-                    <div class="table-container">
-                        <table class="university-table">
-                            <thead>
-                                <tr>
-                                    <th>大学名称</th>
-                                    <th>省份</th>
-                                    <th>类型</th>
-                                    <th>办学层次</th>
-                                </tr>
-                            </thead>
-                            <tbody id="university-table-body">
-                                <!-- 动态填充数据 -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="footer">
-        <p>中国高等教育数据分析平台 © 2025 | 数据可视化大屏</p>
+    <header class="page-header">
+        <h1>中国大学数据可视化平台</h1>
+    </header>
+    <div class="map-container">
+        <div id="chart-map" class="chart-content"></div>
     </div>
     <script src="../static/js/scripts.js"></script>
 </body>

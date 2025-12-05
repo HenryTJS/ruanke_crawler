@@ -1,306 +1,31 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: "Microsoft YaHei", sans-serif;
-}
 body {
     background: linear-gradient(135deg, #1e3799, #4a69bd);
     color: #fff;
     min-height: 100vh;
-    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0; /* 确保 body 没有默认外边距 */
 }
-.dashboard-header {
+.page-header {
+    width: 100%;
     text-align: center;
     padding: 20px 0;
-    margin-bottom: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    margin: 0; /* 确保 header 没有外边距 */
 }
-.dashboard-title {
+.page-header h1 {
     font-size: 36px;
     font-weight: bold;
-    letter-spacing: 2px;
-    margin-bottom: 10px;
-    background: #f7afb2;
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-.search-bar-container {
-    width: 100%;
-    display: flex;
-    gap: 20px;
-    margin-bottom: 30px;
-    flex-wrap: wrap;
-}
-.searchable-select {
-    position: relative;
-    flex: 1;
-    min-width: 200px;
-}
-.searchable-select input {
-    width: 100%;
-    padding: 8px 20px;
-    border-radius: 30px;
-    font-size: 16px;
-    border: 1px solid #ccc;
-    background: rgba(255,255,255,0.15);
     color: #fff;
-    outline: none;
+    margin: 0; /* 确保标题没有外边距 */
 }
-.searchable-select input::placeholder {
-    color: #ccc;
-}
-.searchable-select .dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    max-height: 300px;
-    overflow-y: auto;
-    background: rgba(255,255,255,0.9);
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    margin-top: 5px;
-    z-index: 1000;
-    display: none;
-}
-.searchable-select .dropdown div {
-    padding: 8px 15px;
-    color: #000;
-    cursor: pointer;
-}
-.searchable-select .dropdown div:hover {
-    background-color: #74b9ff;
-    color: #fff;
-}
-.search-actions {
-    display: flex;
-    align-items: center;
-}
-.apply-btn {
-    padding: 8px 16px;
-    border-radius: 20px;
-    border: none;
-    background: #74b9ff;
-    color: #fff;
-    font-size: 14px;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(116, 185, 255, 0.35);
-    transition: all 0.2s ease;
-}
-.apply-btn:hover {
-    background: #5dade2;
-    box-shadow: 0 6px 14px rgba(116, 185, 255, 0.45);
-}
-.apply-btn:active {
-    transform: scale(0.98);
-}
-/* 新的主内容布局 - 三列布局，使用flex比例2:1:1，无间隙 */
-.main-content {
-    display: flex;
-    margin-bottom: 25px;
-    width: 100%;
-}
-
-.left-panel {
-    flex: 2; /* 占2份，即50% */
-    display: flex;
-    flex-direction: column;
-}
-
-.middle-panel {
-    flex: 1; /* 占1份，即25% */
-    display: flex;
-    flex-direction: column;
-}
-
-.right-panel {
-    flex: 1; /* 占1份，即25% */
-    display: flex;
-    flex-direction: column;
-}
-
 .map-container {
-    /* 保持1:1宽高比 */
-    aspect-ratio: 1;
-    width: 100%;
-}
-
-.map-container .chart-content {
-    height: calc(100% - 60px);
-}
-
-.dashboard-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 25px;
-    margin-bottom: 25px;
-}
-.chart-container {
-    background: transparent;
-    padding: 20px;
-    /* 让每个容器都是正方形 */
-    aspect-ratio: 1;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-}
-
-/* 特别针对表格容器的样式 */
-.right-panel .chart-container:last-child {
-    padding: 20px; /* 恢复标准内边距 */
+    width: 60vw;
+    height: 60vw;
+    margin-top: 10px; /* 地图与标题之间的间距 */
 }
 .chart-content {
-    height: 500px;
-}
-
-/* 图表内容高度 - 填充容器 */
-.chart-content {
-    height: 100%; /* 容器高度 */
-}
-
-/* 表格样式 - 完全限制在正方形容器内 */
-.table-container {
-    height: 100%;
-    width: 100%;
-    overflow: hidden;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.05);
-}
-
-.university-table {
     width: 100%;
     height: 100%;
-    border-collapse: collapse;
-    font-size: 16px;
-    table-layout: fixed;
-}
-
-.university-table thead {
-    height: 40px;
-    display: block;
-    width: 100%;
-}
-
-.university-table tbody {
-    height: calc(100% - 40px);
-    display: block;
-    width: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
-}
-
-.university-table thead tr {
-    display: table;
-    width: 100%;
-    table-layout: fixed;
-}
-
-.university-table tbody tr {
-    display: table;
-    width: 100%;
-    table-layout: fixed;
-}
-
-.university-table th,
-.university-table td {
-    padding: 8px 12px;
-    text-align: left;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    width: 20%;
-}
-
-.university-table th {
-    background: rgba(116, 185, 255, 0.2);
-    color: #74b9ff;
-    font-weight: bold;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
-
-.university-table td {
-    color: #fff;
-}
-
-.university-table tbody tr:hover {
-    background: rgba(116, 185, 255, 0.1);
-}
-
-.university-table tbody tr:nth-child(even) {
-    background: rgba(255, 255, 255, 0.02);
-}
-
-/* 自定义滚动条样式 */
-.table-container::-webkit-scrollbar,
-.university-table tbody::-webkit-scrollbar {
-    width: 4px; /* 更细的滚动条 */
-}
-
-.table-container::-webkit-scrollbar-track,
-.university-table tbody::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 2px;
-}
-
-.table-container::-webkit-scrollbar-thumb,
-.university-table tbody::-webkit-scrollbar-thumb {
-    background: rgba(116, 185, 255, 0.6);
-    border-radius: 2px;
-}
-
-.table-container::-webkit-scrollbar-thumb:hover,
-.university-table tbody::-webkit-scrollbar-thumb:hover {
-    background: rgba(116, 185, 255, 0.8);
-}
-
-.footer {
-    text-align: center;
-    margin-top: 30px;
-    color: #ccc;
-}
-@media (max-width: 1200px) {
-    .main-content {
-        flex-direction: column;
-        height: auto;
-    }
-    
-    .left-panel,
-    .middle-panel,
-    .right-panel {
-        flex: none;
-        height: auto;
-    }
-    
-    .middle-panel,
-    .right-panel {
-        gap: 15px;
-    }
-    
-    .chart-content {
-        height: 500px !important;
-    }
-    
-    .search-bar-container {
-        flex-direction: column;
-    }
-}
-.subject-type-selector {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
-}
-.subject-type-btn {
-    padding: 6px 12px;
-    border-radius: 20px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: #fff;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-.subject-type-btn.active {
-    background: rgba(116, 185, 255, 0.5);
-    border-color: #74b9ff;
-    box-shadow: 0 0 10px rgba(116, 185, 255, 0.5);
 }
