@@ -63,7 +63,6 @@ def process_subjects():
         result_df.to_excel(writer, sheet_name=sheet_name, index=False, startrow=0)
 
         # 打开工作簿和工作表
-        workbook = writer.book
         worksheet = writer.sheets[sheet_name]
 
         # 获取列名对应的 Excel 列字母
@@ -171,7 +170,6 @@ def process_majors():
         result_df.to_excel(writer, sheet_name=sheet_name, index=False, startrow=0)
 
         # 打开工作簿和工作表
-        workbook = writer.book
         worksheet = writer.sheets[sheet_name]
 
         # 获取列名对应的 Excel 列字母
@@ -214,5 +212,5 @@ def process_majors():
     print(f"数据已成功保存到 {output_file} 的 {sheet_name} 工作表中。")
 
 if __name__ == "__main__":
-    process_subjects()
-    # process_majors()
+    # process_subjects()
+    process_majors()

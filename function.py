@@ -141,8 +141,6 @@ def save_to_excel(df, excel_file, sheet_name):
         with pd.ExcelWriter(excel_file, engine='openpyxl') as writer:
             df.to_excel(writer, sheet_name=sheet_name, index=False)
         print(f"数据已成功保存到Excel文件 {excel_file} 的工作表 {sheet_name} 中。")
-    except Exception as e:
-        print(f"保存到Excel文件时出错: {e}")
 
 
 def read_table_to_dataframe(table_name):
