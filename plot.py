@@ -47,60 +47,57 @@ def process_subjects():
                 "权重"
             ] += num_rows
 
-    # 添加八列，并使用 Excel 公式填充
-    result_df["最终得分"] = None
-    result_df["最终排名"] = None
-    result_df["顶尖学科"] = None
-    result_df["一流学科"] = None
-    result_df["上榜学科"] = None
-    result_df["顶尖比一流"] = None
-    result_df["顶尖比上榜"] = None
-    result_df["一流比上榜"] = None
+    # 计算新增列的数值
+    # 最终得分
+    result_df["最终得分"] = result_df.apply(
+        lambda row: 0 if row["权重"] == 0 else row["总得分"] / row["权重"], axis=1
+    )
+    
+    # 顶尖学科
+    result_df["顶尖学科"] = result_df["前2名"] + result_df["前3%"]
+    
+    # 一流学科
+    result_df["一流学科"] = (
+        result_df["顶尖学科"] + result_df["前7%"] + result_df["前12%"] + 
+        result_df["前3名"] + result_df["前4名"]
+    )
+    
+    # 上榜学科
+    result_df["上榜学科"] = (
+        result_df["一流学科"] + result_df["前20%"] + result_df["前30%"] + 
+        result_df["前40%"] + result_df["前50%"]
+    )
+    
+    # 顶尖比一流
+    result_df["顶尖比一流"] = result_df.apply(
+        lambda row: -1 if row["一流学科"] == 0 else row["顶尖学科"] / row["一流学科"], axis=1
+    )
+    
+    # 顶尖比上榜
+    result_df["顶尖比上榜"] = result_df.apply(
+        lambda row: -1 if row["上榜学科"] == 0 else row["顶尖学科"] / row["上榜学科"], axis=1
+    )
+    
+    # 一流比上榜
+    result_df["一流比上榜"] = result_df.apply(
+        lambda row: -1 if row["上榜学科"] == 0 else row["一流学科"] / row["上榜学科"], axis=1
+    )
+    
+    # 最终排名（按最终得分降序排名）
+    result_df["最终排名"] = result_df["最终得分"].rank(ascending=False, method="min").astype(int)
+    
+    # 调整列顺序，将最终得分和最终排名放到最后
+    cols = [col for col in result_df.columns if col not in ["最终得分", "最终排名"]]
+    cols.extend(["最终得分", "最终排名"])
+    result_df = result_df[cols]
+    
+    # 按最终排名升序排列
+    result_df = result_df.sort_values("最终排名", ascending=True).reset_index(drop=True)
 
     # 保存到 "软科大学可视化.xlsx" 的新工作表
     mode = "a" if os.path.exists(output_file) else "w"
     with pd.ExcelWriter(output_file, engine="openpyxl", mode=mode, if_sheet_exists="replace" if mode == "a" else None) as writer:
         result_df.to_excel(writer, sheet_name=sheet_name, index=False, startrow=0)
-
-        # 打开工作簿和工作表
-        worksheet = writer.sheets[sheet_name]
-
-        # 获取列名对应的 Excel 列字母
-        def get_column_letter(column_name):
-            return openpyxl.utils.get_column_letter(result_df.columns.get_loc(column_name) + 1)
-
-        # 获取列字母
-        final_score_col = get_column_letter("最终得分")
-        final_rank_col = get_column_letter("最终排名")
-        top_subject_col = get_column_letter("顶尖学科")
-        first_subject_col = get_column_letter("一流学科")
-        listed_subject_col = get_column_letter("上榜学科")
-        top_vs_first_col = get_column_letter("顶尖比一流")
-        top_vs_listed_col = get_column_letter("顶尖比上榜")
-        first_vs_listed_col = get_column_letter("一流比上榜")
-
-        # 获取数据起始行和列
-        start_row = 2  # 数据从第2行开始（Excel中从1开始计数）
-        total_rows = len(result_df) + start_row - 1
-
-        # 填充公式
-        for row in range(start_row, total_rows + 1):
-            # 最终得分公式
-            worksheet[f"{final_score_col}{row}"] = f"=IF({get_column_letter('权重')}{row}=0, 0, {get_column_letter('总得分')}{row}/{get_column_letter('权重')}{row})"
-            # 最终排名公式
-            worksheet[f"{final_rank_col}{row}"] = f"=RANK({final_score_col}{row}, {final_score_col}${start_row}:{final_score_col}${total_rows}, 0)"
-            # 顶尖学科公式
-            worksheet[f"{top_subject_col}{row}"] = f"=SUM({get_column_letter('前2名')}{row},{get_column_letter('前3%')}{row})"
-            # 一流学科公式
-            worksheet[f"{first_subject_col}{row}"] = f"=SUM({get_column_letter('顶尖学科')}{row},{get_column_letter('前7%')}{row},{get_column_letter('前12%')}{row},{get_column_letter('前3名')}{row},{get_column_letter('前4名')}{row})"
-            # 上榜学科公式
-            worksheet[f"{listed_subject_col}{row}"] = f"=SUM({get_column_letter('一流学科')}{row},{get_column_letter('前20%')}{row},{get_column_letter('前30%')}{row},{get_column_letter('前40%')}{row},{get_column_letter('前50%')}{row})"
-            # 顶尖比一流公式
-            worksheet[f"{top_vs_first_col}{row}"] = f"=IF({first_subject_col}{row}=0, -1, {top_subject_col}{row}/{first_subject_col}{row})"
-            # 顶尖比上榜公式
-            worksheet[f"{top_vs_listed_col}{row}"] = f"=IF({listed_subject_col}{row}=0, -1, {top_subject_col}{row}/{listed_subject_col}{row})"
-            # 一流比上榜公式
-            worksheet[f"{first_vs_listed_col}{row}"] = f"=IF({listed_subject_col}{row}=0, -1, {first_subject_col}{row}/{listed_subject_col}{row})"
 
     print(f"数据已成功保存到 {output_file} 的 {sheet_name} 工作表中。")
 
@@ -154,60 +151,51 @@ def process_majors():
                 "权重"
             ] += num_rows
 
-    # 添加八列，并使用 Excel 公式填充
-    result_df["最终得分"] = None
-    result_df["最终排名"] = None
-    result_df["A+专业"] = None
-    result_df["A类专业"] = None
-    result_df["上榜专业"] = None
-    result_df["A+比A类"] = None
-    result_df["A+比上榜"] = None
-    result_df["A类比上榜"] = None
+    # 计算新增列的数值
+    # 最终得分
+    result_df["最终得分"] = result_df.apply(
+        lambda row: 0 if row["权重"] == 0 else row["总得分"] / row["权重"], axis=1
+    )
+    
+    # A+专业
+    result_df["A+专业"] = result_df["A+"]
+    
+    # A类专业
+    result_df["A类专业"] = result_df["A+专业"] + result_df["A"]
+    
+    # 上榜专业
+    result_df["上榜专业"] = result_df["A类专业"] + result_df["B+"] + result_df["B"]
+    
+    # A+比A类
+    result_df["A+比A类"] = result_df.apply(
+        lambda row: -1 if row["A类专业"] == 0 else row["A+专业"] / row["A类专业"], axis=1
+    )
+    
+    # A+比上榜
+    result_df["A+比上榜"] = result_df.apply(
+        lambda row: -1 if row["上榜专业"] == 0 else row["A+专业"] / row["上榜专业"], axis=1
+    )
+    
+    # A类比上榜
+    result_df["A类比上榜"] = result_df.apply(
+        lambda row: -1 if row["上榜专业"] == 0 else row["A类专业"] / row["上榜专业"], axis=1
+    )
+    
+    # 最终排名（按最终得分降序排名）
+    result_df["最终排名"] = result_df["最终得分"].rank(ascending=False, method="min").astype(int)
+    
+    # 调整列顺序，将最终得分和最终排名放到最后
+    cols = [col for col in result_df.columns if col not in ["最终得分", "最终排名"]]
+    cols.extend(["最终得分", "最终排名"])
+    result_df = result_df[cols]
+    
+    # 按最终排名升序排列
+    result_df = result_df.sort_values("最终排名", ascending=True).reset_index(drop=True)
 
     # 保存到 "软科大学可视化.xlsx" 的新工作表
     mode = "a" if os.path.exists(output_file) else "w"
     with pd.ExcelWriter(output_file, engine="openpyxl", mode=mode, if_sheet_exists="replace" if mode == "a" else None) as writer:
         result_df.to_excel(writer, sheet_name=sheet_name, index=False, startrow=0)
-
-        # 打开工作簿和工作表
-        worksheet = writer.sheets[sheet_name]
-
-        # 获取列名对应的 Excel 列字母
-        def get_column_letter(column_name):
-            return openpyxl.utils.get_column_letter(result_df.columns.get_loc(column_name) + 1)
-
-        # 获取列字母
-        final_score_col = get_column_letter("最终得分")
-        final_rank_col = get_column_letter("最终排名")
-        top_major_col = get_column_letter("A+专业")
-        first_major_col = get_column_letter("A类专业")
-        listed_major_col = get_column_letter("上榜专业")
-        top_vs_first_col = get_column_letter("A+比A类")
-        top_vs_listed_col = get_column_letter("A+比上榜")
-        first_vs_listed_col = get_column_letter("A类比上榜")
-
-        # 获取数据起始行和列
-        start_row = 2  # 数据从第2行开始（Excel中从1开始计数）
-        total_rows = len(result_df) + start_row - 1
-
-        # 填充公式
-        for row in range(start_row, total_rows + 1):
-            # 最终得分公式
-            worksheet[f"{final_score_col}{row}"] = f"=IF({get_column_letter('权重')}{row}=0, 0, {get_column_letter('总得分')}{row}/{get_column_letter('权重')}{row})"
-            # 最终排名公式
-            worksheet[f"{final_rank_col}{row}"] = f"=RANK({final_score_col}{row}, {final_score_col}${start_row}:{final_score_col}${total_rows}, 0)"
-            # A+专业公式
-            worksheet[f"{top_major_col}{row}"] = f"=SUM({get_column_letter('A+')}{row})"
-            # A类专业公式
-            worksheet[f"{first_major_col}{row}"] = f"=SUM({get_column_letter('A+专业')}{row},{get_column_letter('A')}{row})"
-            # 上榜专业公式
-            worksheet[f"{listed_major_col}{row}"] = f"=SUM({get_column_letter('A类专业')}{row},{get_column_letter('B+')}{row},{get_column_letter('B')}{row})"
-            # A+比A类公式
-            worksheet[f"{top_vs_first_col}{row}"] = f"=IF({first_major_col}{row}=0, -1, {top_major_col}{row}/{first_major_col}{row})"
-            # A+比上榜公式
-            worksheet[f"{top_vs_listed_col}{row}"] = f"=IF({listed_major_col}{row}=0, -1, {top_major_col}{row}/{listed_major_col}{row})"
-            # A类比上榜公式
-            worksheet[f"{first_vs_listed_col}{row}"] = f"=IF({listed_major_col}{row}=0, -1, {first_major_col}{row}/{listed_major_col}{row})"
 
     print(f"数据已成功保存到 {output_file} 的 {sheet_name} 工作表中。")
 
