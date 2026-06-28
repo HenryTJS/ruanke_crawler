@@ -6,14 +6,14 @@ import pandas as pd
 
 # ========== 数据库连接配置（请修改为您的实际参数）==========
 DB_CONFIG = {
-    "dbname": "bcvcr",
+    "dbname": "bcmr",
     "user": "postgres",
     "password": "2022S3414ycx",
     "host": "localhost",
     "port": 5432
 }
 
-# ========== 建表 SQL（如果表不存在则创建）==========
+# ========== 建表 SQL（仅核心表）==========
 CREATE_TABLES_SQL = """
 CREATE TABLE IF NOT EXISTS hierarchy_node (
     id          SERIAL PRIMARY KEY,
@@ -46,6 +46,57 @@ VALUES (%s, %s)
 ON CONFLICT DO NOTHING;
 """
 
+
+def init_database():
+    """
+    确保目标数据库存在；若存在则清空所有表并重建核心表。
+    """
+    cfg = DB_CONFIG
+    dbname = cfg['dbname']
+
+    # 连接默认维护数据库（如 postgres）
+    default_cfg = cfg.copy()
+    default_cfg['dbname'] = 'postgres'  # 也可用 'template1'
+    conn = psycopg2.connect(**default_cfg)
+    conn.autocommit = True
+    cur = conn.cursor()
+
+    # 检查目标数据库是否存在
+    cur.execute("SELECT 1 FROM pg_database WHERE datname = %s", (dbname,))
+    exists = cur.fetchone() is not None
+
+    if not exists:
+        cur.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(dbname)))
+        print(f"数据库 {dbname} 已创建。")
+    cur.close()
+    conn.close()
+
+    # 连接到目标数据库，清空所有表
+    conn = psycopg2.connect(**cfg)
+    conn.autocommit = False
+    cur = conn.cursor()
+
+    # 获取 public 模式下所有普通表
+    cur.execute("""
+        SELECT table_name FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+    """)
+    tables = [row[0] for row in cur.fetchall()]
+
+    if tables:
+        # 逐个删除（使用 CASCADE 级联删除依赖对象）
+        for table in tables:
+            cur.execute(sql.SQL("DROP TABLE IF EXISTS {} CASCADE").format(sql.Identifier(table)))
+        print(f"已删除 {len(tables)} 张表。")
+
+    # 重建核心表
+    cur.execute(CREATE_TABLES_SQL)
+    conn.commit()
+    cur.close()
+    conn.close()
+    print("数据库初始化完成（hierarchy_node 和 hierarchy_node_year 已重建）。")
+
+
 def process_node(cursor, parent_id, node_dict, child_key):
     """
     递归处理一个节点及其子节点
@@ -77,9 +128,10 @@ def process_node(cursor, parent_id, node_dict, child_key):
         for child in children:
             process_node(cursor, node_id, child, child_key)
 
+
 def import_json_to_db(json_file_path, child_key="subfields"):
     """
-    主入口函数：读取JSON文件，递归导入数据库
+    主入口函数：读取JSON文件，递归导入数据库（假设表已存在）
     :param json_file_path: JSON文件路径
     :param child_key: JSON中代表子节点数组的键名（默认 'subfields'）
     """
@@ -88,10 +140,6 @@ def import_json_to_db(json_file_path, child_key="subfields"):
 
     conn = psycopg2.connect(**DB_CONFIG)
     cursor = conn.cursor()
-
-    # 建表
-    cursor.execute(CREATE_TABLES_SQL)
-    conn.commit()
 
     # 假设 JSON 最外层是一个数组，每个元素是一个根节点
     for root_node in data:
@@ -154,7 +202,10 @@ def save_dataframe_to_db(df: pd.DataFrame, type_name: str, year: int, code: str 
     conn.close()
     print(f"已将 {len(records)} 条记录写入表 {table_name}。")
 
+
 if __name__ == "__main__":
-    # 示例用法：
-    # 导入两层学科数据（子节点键名为 'subfields'）
-    import_json_to_db("json/bcvcr.json", child_key="subfields")
+    # 1. 初始化数据库（若不存在则创建，若存在则清空所有表并重建核心表）
+    init_database()
+
+    # 2. 导入层级数据
+    import_json_to_db("json/bcmr.json", child_key="subfields")
