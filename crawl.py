@@ -63,11 +63,11 @@ def get_url(i, j, d):
 
 def extract_leaf_codes(data, match_code=None):
     """
-    从层级 JSON 数据中提取所有叶子节点的 (code, years) 列表。
+    从层级 JSON 数据中提取所有叶子节点的 (code, name, years) 列表。
     
     :param data: JSON 数据（列表，每个元素是一个节点）
     :param match_code: 可选，如果提供则只返回该 code 节点下的叶子节点
-    :return: list of (code, years) 元组
+    :return: list of (code, name, years) 元组
     """
     result = []
 
@@ -92,9 +92,10 @@ def extract_leaf_codes(data, match_code=None):
         else:
             # 没有 subfields 的节点就是叶子节点
             code = node.get("number")
+            name = node.get("name", "")
             years = node.get("year", [])
             if code:
-                result.append((code, years))
+                result.append((code, name, years))
 
     if match_code is not None:
         # 查找匹配的节点
@@ -111,7 +112,7 @@ def extract_leaf_codes(data, match_code=None):
     return result
 
 
-def onecrawl(type, year, code=None):
+def onecrawl(type, year, code=None, name=""):
     """
     爬取指定 type 和 year 的数据，保存为 CSV 文件。
     对于某些 type（例如 arwu, grsssd）不需要 code 参数；对于需要 code 的 type，如果未提供将报错。
@@ -134,10 +135,13 @@ def onecrawl(type, year, code=None):
     print(f"抓取类型: {rv[type]} 年份: {year}，记录数: {len(univ_data)}")
     print(univ_data.head(10))
 
-    # 保存为 CSV 文件
+    # 保存为 CSV 文件（无数据时不保存）
+    if len(univ_data) == 0:
+        print(f"抓取结果为空，跳过保存")
+        return
     os.makedirs("csv", exist_ok=True)
     if code is not None:
-        csv_filename = f"csv/{rv[type]}_{year}_{code}.csv"
+        csv_filename = f"csv/{rv[type]}_{year}_{code}_{name}.csv"
     else:
         csv_filename = f"csv/{rv[type]}_{year}.csv"
     univ_data.to_csv(csv_filename, index=False, encoding="utf-8-sig")
@@ -190,7 +194,7 @@ if __name__ == "__main__":
             if year_input == "":
                 # 收集所有叶子节点的所有年份
                 all_years = set()
-                for _, years in leaf_codes:
+                for _, _, years in leaf_codes:
                     all_years.update(years)
                 years_to_crawl = sorted(all_years, reverse=True)
                 # 留空年份时不过滤 code
@@ -199,16 +203,19 @@ if __name__ == "__main__":
                 target_year = int(year_input)
                 years_to_crawl = [target_year]
                 # 只保留包含该年份的 code
-                filtered_codes = [(c, y) for c, y in leaf_codes if target_year in y]
+                filtered_codes = [(c, n, y) for c, n, y in leaf_codes if target_year in y]
                 if not filtered_codes:
                     print(f"警告：没有 code 包含 {target_year} 年的数据，跳过")
                     continue
 
             # 执行爬取
-            for code_val, _ in filtered_codes:
+            for code_val, name_val, code_years in filtered_codes:
+                # 只爬取该 code 自身年份列表中的年份
                 for year_val in years_to_crawl:
+                    if year_val not in code_years:
+                        continue
                     try:
-                        onecrawl(type_arg, year_val, code_val)
+                        onecrawl(type_arg, year_val, code_val, name_val)
                     except Exception as e:
                         print(f"爬取出错：类型={rv[type_arg]}, 年份={year_val}, code={code_val}, 错误={e}")
 
