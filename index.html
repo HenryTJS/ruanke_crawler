@@ -60,27 +60,71 @@
   .filter-item input:focus {
     border-color: #2a5298;
   }
-  /* 平铺多选选项组件 */
-  .ms-options {
-    display: flex; flex-wrap: wrap; gap: 2px 6px;
-    max-width: 100%;
+  /* 下拉多选组件 */
+  .ms-dropdown { position: relative; }
+  .ms-trigger {
+    display: inline-flex; align-items: center; gap: 8px;
+    min-width: 150px; padding: 8px 12px;
+    border: 1px solid #d9d9d9; border-radius: 6px;
+    background: #fff; cursor: pointer; font-size: 13px;
+    -webkit-user-select: none; user-select: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
   }
+  .ms-trigger:hover { border-color: #2a5298; }
+  .ms-dropdown.ms-open .ms-trigger {
+    border-color: #2a5298;
+    box-shadow: 0 0 0 2px rgba(42,82,152,0.15);
+  }
+  .ms-trigger-label { color: #666; font-weight: 600; }
+  .ms-trigger-count { color: #2a5298; font-weight: 600; margin-left: auto; }
+  .ms-caret { color: #999; transition: transform 0.2s; }
+  .ms-dropdown.ms-open .ms-caret { transform: rotate(180deg); }
+  .ms-panel {
+    position: absolute; top: calc(100% + 4px); left: 0; z-index: 100;
+    min-width: 230px; max-width: 320px;
+    background: #fff; border: 1px solid #e0e0e0; border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    display: none; flex-direction: column; overflow: hidden;
+  }
+  .ms-dropdown.ms-open .ms-panel { display: flex; }
+  .ms-search {
+    border: none; border-bottom: 1px solid #f0f0f0;
+    padding: 10px 12px; font-size: 13px; outline: none;
+  }
+  .ms-search:focus { background: #fafbff; }
+  .ms-panel-list { max-height: 260px; overflow-y: auto; padding: 6px; }
   .ms-opt {
-    display: inline-flex; align-items: center; gap: 2px;
-    font-size: 13px;
-    color: #444;
-    cursor: pointer;
-    -webkit-user-select: none;
-    user-select: none;
-    white-space: nowrap;
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 8px; border-radius: 5px;
+    font-size: 13px; color: #444; cursor: pointer;
+    -webkit-user-select: none; user-select: none; white-space: nowrap;
   }
-  .ms-opt:hover { color: #2a5298; }
+  .ms-opt:hover { background: #f5f8ff; color: #2a5298; }
   .ms-opt input[type="checkbox"] {
-    width: 11px; height: 11px; min-width: 11px; cursor: pointer; margin: 0; flex-shrink: 0;
+    width: 14px; height: 14px; min-width: 14px;
+    margin: 0; cursor: pointer; flex-shrink: 0;
+    accent-color: #2a5298;
   }
   .ms-opt.ms-checked { color: #2a5298; font-weight: 600; }
-  .ms-opt.ms-all { color: #2a5298; font-weight: 600; }
-  .ms-empty { font-size: 13px; color: #999; padding: 4px 0; }
+  /* 顶部"全选"行 */
+  .ms-all-row {
+    border-bottom: 1px solid #f0f0f0;
+    margin-bottom: 4px;
+    border-radius: 5px;
+    color: #2a5298;
+    font-weight: 600;
+  }
+  .ms-all-row.ms-checked { background: #f0f5ff; }
+  .ms-empty { padding: 10px; font-size: 13px; color: #999; text-align: center; }
+  /* 省份-城市树形 */
+  .ms-prov { font-weight: 400; }
+  .ms-arrow { color: #999; font-size: 11px; transition: transform 0.15s; width: 14px; flex-shrink: 0; }
+  .ms-arrow-open { transform: rotate(90deg); }
+  .ms-arrow-none { visibility: hidden; }
+  .ms-prov-label { flex: 1; }
+  .ms-prov-badge { color: #2a5298; font-size: 11px; background: #eef3ff; border-radius: 4px; padding: 1px 6px; }
+  .ms-city { padding-left: 20px; font-weight: 400; color: #444; }
+  .ms-indent { color: #bbb; width: 12px; flex-shrink: 0; font-size: 11px; }
   .btn {
     padding: 8px 18px;
     border: none;
@@ -115,7 +159,7 @@
     border-bottom: 2px solid #f0f0f0;
   }
   #mapChart { width: 100%; height: 520px; }
-  #barChart { width: 100%; height: 250px; }
+  #barChart { width: 100%; height: 320px; }
   #pieChart { width: 100%; height: 250px; }
 
   /* 列表 */
@@ -232,24 +276,24 @@
   <div class="filter-bar">
     <div class="filter-row">
       <div class="filter-item">
-        <label>省份</label>
-        <div class="ms-options" id="msProvince"></div>
+        <label>省份 / 城市</label>
+        <div class="ms-dropdown" id="msProvince"></div>
       </div>
       <div class="filter-item">
         <label>学校类别</label>
-        <div class="ms-options" id="msCategory"></div>
+        <div class="ms-dropdown" id="msCategory"></div>
       </div>
       <div class="filter-item">
         <label>层次</label>
-        <div class="ms-options" id="msLevel"></div>
+        <div class="ms-dropdown" id="msLevel"></div>
       </div>
       <div class="filter-item">
         <label>主管部门</label>
-        <div class="ms-options" id="msAdmin"></div>
+        <div class="ms-dropdown" id="msAdmin"></div>
       </div>
       <div class="filter-item">
         <label>标签</label>
-        <div class="ms-options" id="msTag"></div>
+        <div class="ms-dropdown" id="msTag"></div>
       </div>
       <div class="filter-item">
         <label>关键词搜索</label>
@@ -264,12 +308,12 @@
   <!-- 图表 -->
   <div class="charts-grid">
     <div class="card">
-      <h3>🗺️ 各省高校数量分布（点击省份可筛选）</h3>
+      <h3>🗺️ 各省高校数量分布</h3>
       <div id="mapChart"></div>
     </div>
     <div>
       <div class="card" style="margin-bottom:20px;">
-        <h3>📊 高校数量 Top 10 省份</h3>
+        <h3>📊 高校数量 Top 10 城市</h3>
         <div id="barChart"></div>
       </div>
       <div class="card">
@@ -328,8 +372,10 @@
 // ============ 全局状态 ============
 var allData = UNIV_DATA || [];
 // 每个筛选维度对应一个数组（多选），空数组表示不筛选
+// provinceCity 是树形：{ province: [省...], city: [部分选择的城市...], partial: [部分选择的省...] }
+// 省在 province 但不在 partial = 该省全选（隐含选中其所有城市）
 var filters = {
-  province: [],
+  provinceCity: { province: [], city: [], partial: [] },
   category: [],
   level: [],
   admin: [],
@@ -340,7 +386,7 @@ var mapChart, barChart, pieChart;
 
 // 筛选维度配置：ms-wrap id -> filters 中的键名
 var MS_KEYS = {
-  msProvince: 'province',
+  msProvince: 'provinceCity',
   msCategory: 'category',
   msLevel: 'level',
   msAdmin: 'admin',
@@ -349,8 +395,15 @@ var MS_KEYS = {
 
 // ============ 初始化 ============
 function init() {
-  // 构建平铺多选选项
-  renderMultiSelect('msProvince', 'province', unique(allData.map(d => d.provinceShort)).filter(Boolean).sort());
+  // 设置下拉组件标签
+  var labels = { msProvince: '省份 / 城市', msCategory: '学校类别', msLevel: '层次', msAdmin: '主管部门', msTag: '标签' };
+  Object.keys(labels).forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.dataset.label = labels[id];
+  });
+
+  // 构建下拉多选选项
+  renderProvinceCity();
   renderMultiSelect('msCategory', 'category', unique(allData.map(d => d.categoryName)).filter(Boolean));
   renderMultiSelect('msLevel', 'level', unique(allData.map(d => d.level)).filter(Boolean));
   renderMultiSelect('msAdmin', 'admin', unique(allData.map(d => d.adminType)).filter(Boolean));
@@ -361,6 +414,13 @@ function init() {
     parseTags(d.tags).forEach(t => tagSet.add(t));
   });
   renderMultiSelect('msTag', 'tag', Array.from(tagSet));
+
+  // 点击页面其它区域关闭所有下拉
+  document.addEventListener('click', function() {
+    document.querySelectorAll('.ms-dropdown.ms-open').forEach(function(d) {
+      d.classList.remove('ms-open');
+    });
+  });
 
   document.getElementById('filterKeyword').addEventListener('input', function() {
     filters.keyword = this.value.trim();
@@ -389,57 +449,440 @@ function init() {
 
 function unique(arr) { return Array.from(new Set(arr)); }
 
-// ============ 平铺多选组件 ============
-// 将一组选项平铺渲染到 wrapId 容器中，支持多选，勾选即应用筛选
-function renderMultiSelect(wrapId, key, options) {
-  var wrap = document.getElementById(wrapId);
-  var selected = filters[key] || [];
+// ============ 省份-城市树形数据 ============
+// 构建 { 省份: [城市...] } 的树结构，且记录每省高校数
+function buildProvinceCityTree() {
+  var tree = {};
+  allData.forEach(function(d) {
+    if (!d.provinceShort) return;
+    if (!tree[d.provinceShort]) tree[d.provinceShort] = { cities: {}, count: 0 };
+    tree[d.provinceShort].count++;
+    if (d.cityName) {
+      if (!tree[d.provinceShort].cities[d.cityName]) tree[d.provinceShort].cities[d.cityName] = 0;
+      tree[d.provinceShort].cities[d.cityName]++;
+    }
+  });
+  return tree;
+}
+var PROVINCE_TREE = null;
+
+// 渲染省份-城市树形下拉（唯一一个"一个框选省又选市"的组件）
+// 记录用户手动展开的省份（点击箭头/文字时切换），勾选省份不会自动展开城市
+var PROVINCE_EXPANDED = {};
+// 直辖市：不显示城市子行（城市=省本身）
+var MUNICIPALITIES = { '北京': 1, '上海': 1, '天津': 1, '重庆': 1 };
+
+function renderProvinceCity() {
+  if (!PROVINCE_TREE) PROVINCE_TREE = buildProvinceCityTree();
+  var wrap = document.getElementById('msProvince');
+  if (!wrap) return;
+  var pc = filters.provinceCity;
+  var isOpen = wrap.classList.contains('ms-open');
+
+  // 省份数组按高校数量降序
+  var provs = Object.keys(PROVINCE_TREE).sort(function(a, b) {
+    return PROVINCE_TREE[b].count - PROVINCE_TREE[a].count;
+  });
+
   wrap.innerHTML = '';
 
-  // 全选选项
-  var allOpt = document.createElement('div');
-  allOpt.className = 'ms-opt ms-all' + (selected.length === 0 ? ' ms-checked' : '');
-  var allChk = document.createElement('input');
-  allChk.type = 'checkbox';
-  allChk.checked = (selected.length === 0);
-  allOpt.appendChild(allChk);
-  var allLabel = document.createElement('span');
-  allLabel.textContent = '全选';
-  allOpt.appendChild(allLabel);
-  allOpt.addEventListener('click', function(e) {
-    if (e.target !== allChk) allChk.checked = !allChk.checked;
-    filters[key] = [];
-    renderMultiSelect(wrapId, key, options);
-    applyFilters();
+  // --- 触发按钮 ---
+  var trigger = document.createElement('div');
+  trigger.className = 'ms-trigger';
+  var label = document.createElement('span');
+  label.className = 'ms-trigger-label';
+  label.textContent = '省份 / 城市';
+  var count = document.createElement('span');
+  count.className = 'ms-trigger-count';
+  count.textContent = selectedSummary(pc);
+  var caret = document.createElement('span');
+  caret.className = 'ms-caret';
+  caret.textContent = '▾';
+  trigger.appendChild(label);
+  trigger.appendChild(count);
+  trigger.appendChild(caret);
+  trigger.addEventListener('click', function(e) {
+    e.stopPropagation();
+    var isOpening = !wrap.classList.contains('ms-open');
+    document.querySelectorAll('.ms-dropdown.ms-open').forEach(function(d) {
+      if (d !== wrap) d.classList.remove('ms-open');
+    });
+    wrap.classList.toggle('ms-open', isOpening);
   });
-  wrap.appendChild(allOpt);
+  wrap.appendChild(trigger);
 
-  // 各选项
-  options.forEach(function(opt) {
-    var isSel = (selected.indexOf(opt) !== -1);
-    var optEl = document.createElement('div');
-    optEl.className = 'ms-opt' + (isSel ? ' ms-checked' : '');
-    var chk = document.createElement('input');
-    chk.type = 'checkbox';
-    chk.checked = isSel;
-    optEl.appendChild(chk);
-    var label = document.createElement('span');
-    label.textContent = opt;
-    optEl.appendChild(label);
-    optEl.addEventListener('click', function(e) {
-      if (e.target !== chk) chk.checked = !chk.checked;
-      var sel = filters[key] || [];
-      if (chk.checked) {
-        if (sel.indexOf(opt) === -1) sel.push(opt);
-      } else {
-        sel = sel.filter(function(v) { return v !== opt; });
+  // --- 面板 ---
+  var panel = document.createElement('div');
+  panel.className = 'ms-panel';
+  panel.style.minWidth = '260px';
+  panel.addEventListener('click', function(e) { e.stopPropagation(); });
+
+  var search = document.createElement('input');
+  search.className = 'ms-search';
+  search.type = 'text';
+  search.placeholder = '搜索省份或城市...';
+  search.addEventListener('input', function() {
+    renderTree(search.value.trim());
+  });
+  panel.appendChild(search);
+
+  var list = document.createElement('div');
+  list.className = 'ms-panel-list';
+  panel.appendChild(list);
+
+  wrap.appendChild(panel);
+
+  // 已选摘要
+  function selectedSummary(pc) {
+    var p = (pc.province || []).length;
+    var c = (pc.city || []).length;
+    if (p === 0 && c === 0) return '全部';
+    if (p > 0) return '已选 ' + p + ' 省';
+    return '已选 ' + c + ' 城';
+  }
+
+  // 渲染树：kw 为搜索词
+  function renderTree(kw) {
+    list.innerHTML = '';
+    var totalP = 0, totalC = 0;
+    var pcNow = filters.provinceCity;
+
+    // 顶部"全选"行（全选所有省份，各市全选；点击不展开城市）
+    var allSel = pcNow.province.length === provs.length;
+    var allRow = document.createElement('div');
+    allRow.className = 'ms-opt ms-all-row' + (allSel ? ' ms-checked' : '');
+    var allChk = document.createElement('input');
+    allChk.type = 'checkbox';
+    allChk.checked = allSel;
+    allRow.appendChild(allChk);
+    var allSpan = document.createElement('span');
+    allSpan.textContent = '全选';
+    allRow.appendChild(allSpan);
+    allRow.addEventListener('click', function(e) {
+      if (e.target !== allChk) allChk.checked = !allChk.checked;
+      filters.provinceCity = allChk.checked ? { province: provs.slice(), city: [], partial: [] } : { province: [], city: [], partial: [] };
+      PROVINCE_EXPANDED = {}; // 全选/清空后不展开任何省份城市
+      renderProvinceCity();
+      // 保持当前展开/折叠状态，不自动展开城市
+      applyFilters();
+    });
+    list.appendChild(allRow);
+
+    provs.forEach(function(p) {
+      var node = PROVINCE_TREE[p];
+      var cityNames = Object.keys(node.cities).sort(function(a, b) { return node.cities[b] - node.cities[a]; });
+      // 搜索：省名或城市名命中才显示
+      var pMatch = !kw || p.indexOf(kw) !== -1;
+      var cMatch = cityNames.filter(function(c) { return c.indexOf(kw) !== -1; });
+      if (!pMatch && cMatch.length === 0) return;
+
+      var isProvSel = pcNow.province.indexOf(p) !== -1;
+      var isMunicipal = !!MUNICIPALITIES[p]; // 直辖市不展开城市
+      var isExpanded = (!isMunicipal) && (!!PROVINCE_EXPANDED[p] || !!kw); // 只有手动展开或搜索时才展开，勾选省不自动展开
+      // 全选判断：省选中且不在 partial 中 = 该省全选所有城市
+      var isPartial = pcNow.partial.indexOf(p) !== -1;
+      var allCitiesSel = isProvSel && !isPartial;
+      var someCitiesSel = isProvSel && isPartial;
+      // 搜索时只显示命中的城市
+      var shownCities = kw ? cMatch : cityNames;
+
+      // --- 省份行 ---
+      var provRow = document.createElement('div');
+      provRow.className = 'ms-opt ms-prov' + (isProvSel ? ' ms-checked' : '');
+      var arrow = document.createElement('span');
+      arrow.className = 'ms-arrow' + (isExpanded ? ' ms-arrow-open' : '') + (isMunicipal ? ' ms-arrow-none' : '');
+      arrow.textContent = isMunicipal ? '' : '▸';
+      var pchk = document.createElement('input');
+      pchk.type = 'checkbox';
+      pchk.checked = isProvSel;
+      var pLabel = document.createElement('span');
+      pLabel.className = 'ms-prov-label';
+      pLabel.textContent = p;
+      var pBadge = document.createElement('span');
+      pBadge.className = 'ms-prov-badge';
+      pBadge.textContent = isProvSel ? (allCitiesSel ? '全部城市' : '部分城市') : '';
+      provRow.appendChild(arrow);
+      provRow.appendChild(pchk);
+      provRow.appendChild(pLabel);
+      provRow.appendChild(pBadge);
+      // 点击省份行：勾选省（默认全选该省所有城市）或展开/收起
+      provRow.addEventListener('click', function(e) {
+        if (e.target === arrow || e.target === pLabel || e.target === pBadge || e.target.classList.contains('ms-prov-label') || e.target.classList.contains('ms-prov-badge')) {
+          // 点击文字/箭头：切换展开（直辖市不可展开）
+          if (isMunicipal) return;
+          isExpanded = !isExpanded;
+          if (isExpanded) PROVINCE_EXPANDED[p] = true;
+          else delete PROVINCE_EXPANDED[p];
+          renderTree(search.value.trim());
+          return;
+        }
+        // 点击复选框：切换省份选中
+        var selProv = pcNow.province.slice();
+        var selCity = pcNow.city.slice();
+        var selPartial = pcNow.partial.slice();
+        if (selProv.indexOf(p) === -1) {
+          selProv.push(p);
+          // 默认全选该省所有城市（不记录城市、不进 partial）
+        } else {
+          selProv = selProv.filter(function(v) { return v !== p; });
+          // 取消省时也移除该省的城市和 partial 状态
+          selCity = selCity.filter(function(c) { return cityNames.indexOf(c) === -1; });
+          selPartial = selPartial.filter(function(v) { return v !== p; });
+        }
+        filters.provinceCity = { province: selProv, city: selCity, partial: selPartial };
+        renderProvinceCity();
+        applyFilters();
+      });
+      list.appendChild(provRow);
+
+      // --- 城市子行（选中省份时展开） ---
+      if (isExpanded) {
+        // 该省城市的"全选"行（勾选 = 该省全选所有城市）
+        var cityAllRow = document.createElement('div');
+        cityAllRow.className = 'ms-opt ms-city ms-all-row' + (allCitiesSel ? ' ms-checked' : '');
+        var cityAllIndent = document.createElement('span');
+        cityAllIndent.className = 'ms-indent';
+        cityAllIndent.textContent = '—';
+        var cityAllChk = document.createElement('input');
+        cityAllChk.type = 'checkbox';
+        cityAllChk.checked = allCitiesSel;
+        cityAllRow.appendChild(cityAllIndent);
+        cityAllRow.appendChild(cityAllChk);
+        var cityAllSpan = document.createElement('span');
+        cityAllSpan.textContent = '全选';
+        cityAllRow.appendChild(cityAllSpan);
+        cityAllRow.addEventListener('click', function(e) {
+          if (e.target !== cityAllChk) cityAllChk.checked = !cityAllChk.checked;
+          var selProv2 = pcNow.province.slice();
+          var selCity2 = pcNow.city.slice();
+          var selPartial2 = pcNow.partial.slice();
+          if (cityAllChk.checked) {
+            // 全选该省所有城市（确保省已选中）
+            if (selProv2.indexOf(p) === -1) selProv2.push(p);
+            selCity2 = selCity2.filter(function(cn) { return cityNames.indexOf(cn) === -1; });
+            selPartial2 = selPartial2.filter(function(v) { return v !== p; });
+          } else {
+            // 取消全选 = 该省所有城市不选，同时取消省份勾选
+            selProv2 = selProv2.filter(function(v) { return v !== p; });
+            selCity2 = selCity2.filter(function(cn) { return cityNames.indexOf(cn) === -1; });
+            selPartial2 = selPartial2.filter(function(v) { return v !== p; });
+          }
+          filters.provinceCity = { province: selProv2, city: selCity2, partial: selPartial2 };
+          renderProvinceCity();
+          applyFilters();
+        });
+        list.appendChild(cityAllRow);
+
+        shownCities.forEach(function(c) {
+          // 该省全选时城市全部勾选；部分选择时按 city 数组判断
+          var isCSel = isProvSel && (allCitiesSel || pcNow.city.indexOf(c) !== -1);
+          var cRow = document.createElement('div');
+          cRow.className = 'ms-opt ms-city' + (isCSel ? ' ms-checked' : '');
+          var indent = document.createElement('span');
+          indent.className = 'ms-indent';
+          indent.textContent = '—';
+          var cchk = document.createElement('input');
+          cchk.type = 'checkbox';
+          cchk.checked = isCSel;
+          var cLabel = document.createElement('span');
+          cLabel.textContent = c;
+          cRow.appendChild(indent);
+          cRow.appendChild(cchk);
+          cRow.appendChild(cLabel);
+          cRow.addEventListener('click', function(e) {
+            var selProv2 = pcNow.province.slice();
+            var selCity2 = pcNow.city.slice();
+            var selPartial2 = pcNow.partial.slice();
+            var isProvSelected = selProv2.indexOf(p) !== -1;
+            var isPartialNow = selPartial2.indexOf(p) !== -1;
+            // 当前城市是否选中
+            var curSel = isProvSelected && (isPartialNow ? selCity2.indexOf(c) !== -1 : true);
+            var isChecked = !curSel;
+            if (isChecked) {
+              // 勾选城市：确保省份已选中
+              if (!isProvSelected) selProv2.push(p);
+              if (isPartialNow) {
+                // 已在部分选择状态，直接加入该城市
+                if (selCity2.indexOf(c) === -1) selCity2.push(c);
+                // 若该省所有城市都选上了，恢复全选
+                if (cityNames.every(function(cn) { return selCity2.indexOf(cn) !== -1; })) {
+                  selCity2 = selCity2.filter(function(cn) { return cityNames.indexOf(cn) === -1; });
+                  selPartial2 = selPartial2.filter(function(v) { return v !== p; });
+                }
+              } else if (isProvSelected) {
+                // 全选状态下勾选某城市无变化（本来就全选）
+              } else {
+                // 省份未选中：勾选单个城市 -> 省份进入部分选择状态，仅该城市生效
+                selPartial2.push(p);
+                if (selCity2.indexOf(c) === -1) selCity2.push(c);
+              }
+            } else {
+              // 取消城市
+              if (isPartialNow) {
+                selCity2 = selCity2.filter(function(v) { return v !== c; });
+                // 若该省城市被清空，则整个省份取消选择
+                if (!cityNames.some(function(cn) { return selCity2.indexOf(cn) !== -1; })) {
+                  selPartial2 = selPartial2.filter(function(v) { return v !== p; });
+                  selProv2 = selProv2.filter(function(v) { return v !== p; });
+                }
+              } else {
+                // 全选状态取消某城市 -> 进入部分选择，city 记录除它以外的所有城市
+                selPartial2.push(p);
+                cityNames.forEach(function(cn) {
+                  if (cn !== c && selCity2.indexOf(cn) === -1) selCity2.push(cn);
+                });
+              }
+            }
+            filters.provinceCity = { province: selProv2, city: selCity2, partial: selPartial2 };
+            renderProvinceCity();
+            applyFilters();
+          });
+          list.appendChild(cRow);
+        });
       }
-      filters[key] = sel;
+    });
+
+    // 无匹配
+    if (list.children.length === 0) {
+      var empty = document.createElement('div');
+      empty.className = 'ms-empty';
+      empty.textContent = '无匹配选项';
+      list.appendChild(empty);
+    }
+  }
+
+  renderTree('');
+  if (isOpen) wrap.classList.add('ms-open');
+}
+
+// ============ 下拉多选组件 ============
+// 渲染一个下拉复选框：触发按钮显示已选数量，展开面板支持搜索 + 多选
+function renderMultiSelect(wrapId, key, options) {
+  var wrap = document.getElementById(wrapId);
+  if (!wrap) return;
+  var selected = filters[key] || [];
+  var isOpen = wrap.classList.contains('ms-open');
+
+  wrap.innerHTML = '';
+
+  // --- 触发按钮 ---
+  var trigger = document.createElement('div');
+  trigger.className = 'ms-trigger';
+  var label = document.createElement('span');
+  label.className = 'ms-trigger-label';
+  label.textContent = wrap.dataset.label || key;
+  var count = document.createElement('span');
+  count.className = 'ms-trigger-count';
+  count.textContent = selected.length ? '已选 ' + selected.length : '全部';
+  var caret = document.createElement('span');
+  caret.className = 'ms-caret';
+  caret.textContent = '▾';
+  trigger.appendChild(label);
+  trigger.appendChild(count);
+  trigger.appendChild(caret);
+  trigger.addEventListener('click', function(e) {
+    e.stopPropagation();
+    var isOpening = !wrap.classList.contains('ms-open');
+    // 关闭其它下拉
+    document.querySelectorAll('.ms-dropdown.ms-open').forEach(function(d) {
+      if (d !== wrap) d.classList.remove('ms-open');
+    });
+    wrap.classList.toggle('ms-open', isOpening);
+    if (isOpening) {
+      var search = wrap.querySelector('.ms-search');
+      if (search) { search.value = ''; search.focus(); }
+      filterOptions(wrap, key, options);
+    }
+  });
+  wrap.appendChild(trigger);
+
+  // --- 面板 ---
+  var panel = document.createElement('div');
+  panel.className = 'ms-panel';
+  panel.addEventListener('click', function(e) { e.stopPropagation(); });
+
+  var search = document.createElement('input');
+  search.className = 'ms-search';
+  search.type = 'text';
+  search.placeholder = '搜索...';
+  search.addEventListener('input', function() {
+    filterOptions(wrap, key, options);
+  });
+  panel.appendChild(search);
+
+  var list = document.createElement('div');
+  list.className = 'ms-panel-list';
+  panel.appendChild(list);
+
+  wrap.appendChild(panel);
+
+  function filterOptions() {
+    var kw = search.value.trim();
+    var listEl = wrap.querySelector('.ms-panel-list');
+    listEl.innerHTML = '';
+    var shown = options.filter(function(o) { return !kw || o.indexOf(kw) !== -1; });
+    // 顶部"全选"行
+    var isAllSelected = options.length > 0 && selected.length === options.length;
+    var allRow = document.createElement('div');
+    allRow.className = 'ms-opt ms-all-row' + (isAllSelected ? ' ms-checked' : '');
+    var allChk = document.createElement('input');
+    allChk.type = 'checkbox';
+    allChk.checked = isAllSelected;
+    allRow.appendChild(allChk);
+    var allSpan = document.createElement('span');
+    allSpan.textContent = '全选';
+    allRow.appendChild(allSpan);
+    allRow.addEventListener('click', function(e) {
+      if (e.target !== allChk) allChk.checked = !allChk.checked;
+      filters[key] = allChk.checked ? options.slice() : [];
       renderMultiSelect(wrapId, key, options);
       applyFilters();
     });
-    wrap.appendChild(optEl);
-  });
+    listEl.appendChild(allRow);
+    if (shown.length === 0) {
+      var empty = document.createElement('div');
+      empty.className = 'ms-empty';
+      empty.textContent = '无匹配选项';
+      listEl.appendChild(empty);
+    } else {
+      shown.forEach(function(opt) {
+        var isSel = selected.indexOf(opt) !== -1;
+        var optEl = document.createElement('div');
+        optEl.className = 'ms-opt' + (isSel ? ' ms-checked' : '');
+        var chk = document.createElement('input');
+        chk.type = 'checkbox';
+        chk.checked = isSel;
+        optEl.appendChild(chk);
+        var span = document.createElement('span');
+        span.textContent = opt;
+        optEl.appendChild(span);
+        optEl.addEventListener('click', function(e) {
+          if (e.target !== chk) chk.checked = !chk.checked;
+          var sel = filters[key] || [];
+          if (chk.checked) {
+            if (sel.indexOf(opt) === -1) sel.push(opt);
+          } else {
+            sel = sel.filter(function(v) { return v !== opt; });
+          }
+          filters[key] = sel;
+          renderMultiSelect(wrapId, key, options);
+          // 重新展开并聚焦搜索框
+          wrap.classList.add('ms-open');
+          var s = wrap.querySelector('.ms-search');
+          if (s) { s.value = kw; s.focus(); }
+          filterOptions();
+          applyFilters();
+        });
+        listEl.appendChild(optEl);
+      });
+    }
+    // 更新计数
+    var fc = wrap.querySelector('.ms-count');
+    if (fc) fc.textContent = '已选 ' + selected.length + ' / ' + options.length;
+  }
+
+  filterOptions();
+  if (isOpen) wrap.classList.add('ms-open');
 }
 
 function parseTags(tags) {
@@ -452,7 +895,12 @@ function parseTags(tags) {
 // 多选：数组非空时，匹配其中任意一个值（OR 逻辑）
 function getFilteredData() {
   return allData.filter(function(d) {
-    if (filters.province.length && filters.province.indexOf(d.provinceShort) === -1) return false;
+    var pc = filters.provinceCity;
+    if (pc.province.length) {
+      if (pc.province.indexOf(d.provinceShort) === -1) return false;
+      // 该省处于部分选择时，城市须匹配；否则（全选）匹配该省所有城市
+      if (pc.partial.indexOf(d.provinceShort) !== -1 && pc.city.indexOf(d.cityName) === -1) return false;
+    }
     if (filters.category.length && filters.category.indexOf(d.categoryName) === -1) return false;
     if (filters.level.length && filters.level.indexOf(d.level) === -1) return false;
     if (filters.admin.length && filters.admin.indexOf(d.adminType) === -1) return false;
@@ -477,19 +925,21 @@ function applyFilters() {
 }
 
 function resetFilters() {
-  filters = { province:[], category:[], level:[], admin:[], tag:[], keyword:'' };
-  // 重建所有平铺多选选项（重置选项状态）
+  filters = { provinceCity: { province: [], city: [], partial: [] }, category: [], level: [], admin: [], tag: [], keyword: '' };
+  PROVINCE_EXPANDED = {}; // 重置省份展开状态
+  // 重建所有下拉选项（重置选项状态）
   Object.keys(MS_KEYS).forEach(function(id) {
     var key = MS_KEYS[id];
     renderMultiSelect(id, key, getOptionsFor(key));
   });
+  renderProvinceCity();
   document.getElementById('filterKeyword').value = '';
   applyFilters();
 }
 
 // 获取某筛选维度当前应展示的选项列表（用于重置）
 function getOptionsFor(key) {
-  if (key === 'province') return unique(allData.map(d => d.provinceShort)).filter(Boolean).sort();
+  if (key === 'provinceCity') return [];
   if (key === 'category') return unique(allData.map(d => d.categoryName)).filter(Boolean);
   if (key === 'level') return unique(allData.map(d => d.level)).filter(Boolean);
   if (key === 'admin') return unique(allData.map(d => d.adminType)).filter(Boolean);
@@ -550,19 +1000,26 @@ function renderMap(data) {
     }]
   });
 
-  // 点击省份筛选（切换该省份在下拉多选中的选中状态）
+  // 点击省份筛选（切换该省份在树形下拉中的选中状态）
   mapChart.off('click');
   mapChart.on('click', function(params) {
     if (params.name && provCount[params.name]) {
-      var sel = filters.province || [];
-      if (sel.indexOf(params.name) === -1) {
-        sel.push(params.name);
+      var pc = filters.provinceCity;
+      var selProv = pc.province.slice();
+      var selCity = pc.city.slice();
+      var selPartial = pc.partial.slice();
+      var cityNames = PROVINCE_TREE && PROVINCE_TREE[params.name] ? Object.keys(PROVINCE_TREE[params.name].cities) : [];
+      if (selProv.indexOf(params.name) === -1) {
+        selProv.push(params.name);
+        // 默认全选该省所有城市（不记录城市、不进 partial）
       } else {
-        sel = sel.filter(function(v) { return v !== params.name; });
+        selProv = selProv.filter(function(v) { return v !== params.name; });
+        selCity = selCity.filter(function(c) { return cityNames.indexOf(c) === -1; });
+        selPartial = selPartial.filter(function(v) { return v !== params.name; });
       }
-      filters.province = sel;
-      // 重新渲染省份多选选项
-      renderMultiSelect('msProvince', 'province', getOptionsFor('province'));
+      filters.provinceCity = { province: selProv, city: selCity, partial: selPartial };
+      // 重新渲染树形下拉
+      renderProvinceCity();
       applyFilters();
     }
   });
@@ -570,18 +1027,18 @@ function renderMap(data) {
 
 // ============ 柱状图 ============
 function renderBar(data) {
-  var provCount = {};
+  var cityCount = {};
   data.forEach(function(d) {
-    if (d.provinceShort) provCount[d.provinceShort] = (provCount[d.provinceShort] || 0) + 1;
+    if (d.cityName) cityCount[d.cityName] = (cityCount[d.cityName] || 0) + 1;
   });
-  var sorted = Object.entries(provCount).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 10);
+  var sorted = Object.entries(cityCount).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 10);
   barChart.setOption({
     tooltip: { trigger: 'axis' },
-    grid: { left: 50, right: 20, top: 20, bottom: 30 },
+    grid: { left: 50, right: 20, top: 20, bottom: 60 },
     xAxis: {
       type: 'category',
       data: sorted.map(d => d[0]),
-      axisLabel: { interval: 0, fontSize: 11 }
+      axisLabel: { interval: 0, fontSize: 11, rotate: 45 }
     },
     yAxis: { type: 'value', minInterval: 1 },
     series: [{
@@ -677,8 +1134,8 @@ function formatReason(reason) {
 
 function formatInds(inds) {
   if (!inds) return '暂无校园环境数据';
-  // 将 ; 分隔的不同类别转换为换行
-  return inds.split(';').join('\n');
+  // 将 ; 分隔符转换为换行，并去除每行首尾多余空格
+  return inds.split(';').map(function (s) { return s.trim(); }).join('\n');
 }
 
 function closeModal() {

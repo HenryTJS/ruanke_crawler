@@ -1,6 +1,7 @@
 import requests
 import re
 import csv
+import sys
 from io import StringIO
 
 # ---------- 平衡分割函数（不判断双引号，用于分号分割主体数据） ----------
@@ -395,11 +396,13 @@ def dict_list_to_csv(dict_list, output_file=None, fieldnames=None, delimiter=','
         return output.getvalue()
 
 # ---------- 主流程 ----------
-url = "https://www.shanghairanking.cn/_nuxt/static/1785119786/institution/payload.js"
+url = "https://www.shanghairanking.cn/_nuxt/static/1786674202/institution/payload.js"
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0",
     "Referer": "https://www.shanghairanking.cn/institution/huazhong-university-of-science-and-technology",
     "Accept": "*/*",
+    # 注意：服务器会忽略 Accept-Encoding 并强制返回 br(Brotli) 压缩，
+    # 因此需要声明 br 并在下方用 brotli 库手动解压。
     "Accept-Encoding": "gzip, deflate, br",
     "Accept-Language": "zh-CN,zh;q=0.9",
 }
@@ -407,6 +410,9 @@ headers = {
 print(f"正在请求: {url}")
 resp = requests.get(url, headers=headers)
 resp.raise_for_status()
+
+# 说明：环境已安装 brotli 库，requests 会自动解压 br(Brotli) 编码的响应，
+# 因此 resp.content 已是解压后的明文，无需（也不能）再次手动解压。
 source_code = resp.content.decode('utf-8', errors='ignore')
 
 # 提取 s0 和 s1（使用平衡分割，分隔符为逗号）
@@ -449,9 +455,27 @@ result = [{k: v for k, v in d.items() if k not in DROP_COLUMNS} for d in result]
 # 5. 清理输出值（去掉 JS 字符串外层引号）
 result = [{k: clean_output_value(v) for k, v in d.items()} for d in result]
 
+# 5.1 数据修正：指定学校的城市改为目标城市
+CITY_OVERRIDES = {
+    '昆山杜克大学': '苏州市',
+    '陆军军事交通学院': '天津市',
+    '海南东方新丝路职业学院': '东方市',
+    '双河职业技术学院': '双河市',
+}
+for d in result:
+    name = d.get('nameCn', '')
+    if name in CITY_OVERRIDES:
+        d['cityName'] = CITY_OVERRIDES[name]
+
+# 5.2 数据修正：院校类型为空的统一改为"其他"
+for d in result:
+    if not d.get('categoryName', '').strip():
+        d['categoryName'] = '其他'
+
 # 6. 按 univCode 以文本类型从小到大排序
 result = sorted(result, key=lambda d: str(d.get('univCode', '')))
 
-# 输出 CSV
-dict_list_to_csv(result, output_file="output.csv")
-print("CSV 已生成：output.csv")
+# 输出 CSV（可通过命令行参数指定输出文件名，默认 output.csv）
+output_file = sys.argv[1] if len(sys.argv) > 1 else "output.csv"
+dict_list_to_csv(result, output_file=output_file)
+print(f"CSV 已生成：{output_file}")
