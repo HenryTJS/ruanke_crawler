@@ -817,6 +817,7 @@ function renderMultiSelect(wrapId, key, options) {
   wrap.appendChild(panel);
 
   function filterOptions() {
+    var selected = filters[key] || [];
     var kw = search.value.trim();
     var listEl = wrap.querySelector('.ms-panel-list');
     listEl.innerHTML = '';
@@ -866,11 +867,10 @@ function renderMultiSelect(wrapId, key, options) {
           }
           filters[key] = sel;
           renderMultiSelect(wrapId, key, options);
-          // 重新展开并聚焦搜索框
+          // 重新展开并聚焦搜索框；不要重复调用旧闭包的 filterOptions()
           wrap.classList.add('ms-open');
           var s = wrap.querySelector('.ms-search');
           if (s) { s.value = kw; s.focus(); }
-          filterOptions();
           applyFilters();
         });
         listEl.appendChild(optEl);
