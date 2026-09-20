@@ -313,7 +313,7 @@
     </div>
     <div>
       <div class="card" style="margin-bottom:20px;">
-        <h3>📊 高校数量 Top 10 城市</h3>
+        <h3>📊 高校数量 Top 20 城市</h3>
         <div id="barChart"></div>
       </div>
       <div class="card">
@@ -1031,7 +1031,7 @@ function renderBar(data) {
   data.forEach(function(d) {
     if (d.cityName) cityCount[d.cityName] = (cityCount[d.cityName] || 0) + 1;
   });
-  var sorted = Object.entries(cityCount).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 10);
+  var sorted = Object.entries(cityCount).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 20);
   barChart.setOption({
     tooltip: { trigger: 'axis' },
     grid: { left: 50, right: 20, top: 20, bottom: 60 },

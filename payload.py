@@ -396,7 +396,7 @@ def dict_list_to_csv(dict_list, output_file=None, fieldnames=None, delimiter=','
         return output.getvalue()
 
 # ---------- 主流程 ----------
-url = "https://www.shanghairanking.cn/_nuxt/static/1786674202/institution/payload.js"
+url = "https://www.shanghairanking.cn/_nuxt/static/1789466132/institution/payload.js"
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0",
     "Referer": "https://www.shanghairanking.cn/institution/huazhong-university-of-science-and-technology",
@@ -423,8 +423,7 @@ s0_list = [x.strip() for x in split_by_balanced_quote(s0_raw, delimiter=',')]
 s1_list = [x.strip() for x in split_by_balanced_quote(s1_raw, delimiter=',')]
 
 # 提取主体数据部分（从第一个学校数据开始，按分号分割）
-# 跳过 gS.name="全国";gS.code=e; 这两条不属于学校数据的条目
-context = re.findall(r'gS\.code=e;(.*?);return', source_code)[0]
+context = re.findall(r'gW\.code=e;(.*?);return', source_code)[0]
 result = split_by_balanced(context, delimiter=';')
 result = parse_entries(result)
 
