@@ -28,7 +28,7 @@ rc = [r'data:\[(.*?)\],', r'data:\[(.*?)\],', r'\{(.*?)return', r'data:\[(.*?)\]
 
 rm = [[r'id:(.*?),', r'nameCn:(.*?),'],
       [r'code:(.*?),', r'nameCn:(.*?),'],
-      [r'code=(.*?),', r'name=(.*?),'],
+      [r'code=(.*?);', r'name=(.*?);'],
       [r'id:(.*?),', r'nameCn:(.*?),'],
       [],
       [r'code:(.*?),', r'nameCn:(.*?),'],
@@ -188,9 +188,11 @@ if __name__ == "__main__":
                             break
                     for j in range(len(s0_list)):
                         if name in s0_list[j]:
-                            name = s1_list[j][1:-1]
+                            name = s1_list[j]
                             break
-                    else:
+                    if name.startswith('"') and name.endswith('"'):
                         name = name[1:-1]
+                    if code.startswith('"') and code.endswith('"'):
+                        code = code[1:-1]
                     print(f"正在爬取子分类: {name} (code: {code})")
                     onecrawl(type_arg, year_input, code, name)

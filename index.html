@@ -249,9 +249,25 @@
   .modal .section p { font-size: 14px; line-height: 1.8; color: #444; white-space: pre-wrap; }
   .modal .contact { font-size: 14px; color: #555; line-height: 1.9; }
   .modal .contact span { margin-right: 20px; }
+  .ranking-summary {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    margin-bottom: 20px;
+  }
+  .ranking-summary .rank-stat {
+    background: #fff; border-radius: 10px; padding: 14px 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  .rank-stat .rank-stat-label { color: #777; font-size: 12px; }
+  .rank-stat .rank-stat-value { color: #1e3c72; font-size: 22px; font-weight: 700; margin-top: 4px; }
+  .rank-list { display: grid; gap: 8px; }
+  .rank-item { padding: 8px 10px; background: #f7f8fa; border-radius: 6px; font-size: 13px; }
+  .rank-item strong { color: #1e3c72; margin-right: 8px; }
+  .rank-muted { color: #999; }
+  .rank-badge { background: #fff7e6; color: #d46b08; }
 
   @media (max-width: 900px) {
     .charts-grid { grid-template-columns: 1fr; }
+    .ranking-summary { grid-template-columns: repeat(2, 1fr); }
     .header { flex-direction: column; gap: 12px; text-align: center; }
     .filter-actions { margin-left: 0; }
   }
@@ -262,13 +278,19 @@
 <div class="header">
   <div>
     <h1>🎓 中国高校数据可视化平台</h1>
-    <div class="sub">基于 output.csv 数据 · 支持多维筛选与地图统计</div>
   </div>
   <div class="stats">
     <div><div class="num" id="statTotal">0</div><div class="label">高校总数</div></div>
     <div><div class="num" id="statProv">0</div><div class="label">覆盖省份</div></div>
     <div><div class="num" id="statShown">0</div><div class="label">当前显示</div></div>
   </div>
+</div>
+
+<div class="container ranking-summary" id="rankingSummary">
+  <div class="rank-stat"><div class="rank-stat-label">中国大学排名覆盖</div><div class="rank-stat-value" id="rankStatBcur">0</div></div>
+  <div class="rank-stat"><div class="rank-stat-label">中国高职院校排名覆盖</div><div class="rank-stat-value" id="rankStatBcvcr">0</div></div>
+  <div class="rank-stat"><div class="rank-stat-label">专业排名记录</div><div class="rank-stat-value" id="rankStatBcmr">0</div></div>
+  <div class="rank-stat"><div class="rank-stat-label">学科排名记录</div><div class="rank-stat-value" id="rankStatBcsr">0</div></div>
 </div>
 
 <div class="container">
@@ -278,6 +300,22 @@
       <div class="filter-item">
         <label>省份 / 城市</label>
         <div class="ms-dropdown" id="msProvince"></div>
+      </div>
+      <div class="filter-item">
+        <label>学科</label>
+        <div class="ms-dropdown" id="msSubject"></div>
+      </div>
+      <div class="filter-item">
+        <label>专业</label>
+        <div class="ms-dropdown" id="msMajor"></div>
+      </div>
+      <div class="filter-item">
+        <label>学科等级</label>
+        <div class="ms-dropdown" id="msSubjectLevel"></div>
+      </div>
+      <div class="filter-item">
+        <label>专业等级</label>
+        <div class="ms-dropdown" id="msMajorGrade"></div>
       </div>
       <div class="filter-item">
         <label>学校类别</label>
@@ -338,6 +376,7 @@
             <th>城市</th>
             <th>类别</th>
             <th>层次</th>
+            <th>综合排名</th>
             <th>标签</th>
           </tr>
         </thead>
@@ -356,6 +395,10 @@
     <div class="meta" id="mMeta"></div>
     <div class="contact" id="mContact"></div>
     <div class="section">
+      <h4>🏅 软科排名</h4>
+      <div id="mRankings" class="rank-list"></div>
+    </div>
+    <div class="section">
       <h4>🏠 校园环境</h4>
       <p id="mInds"></p>
     </div>
@@ -368,14 +411,20 @@
 
 <script src="china_map.js"></script>
 <script src="data.js"></script>
+<script src="ranking_data.js"></script>
 <script>
 // ============ 全局状态 ============
 var allData = UNIV_DATA || [];
+var rankingData = typeof RANKING_DATA !== 'undefined' ? RANKING_DATA : {};
 // 每个筛选维度对应一个数组（多选），空数组表示不筛选
 // provinceCity 是树形：{ province: [省...], city: [部分选择的城市...], partial: [部分选择的省...] }
 // 省在 province 但不在 partial = 该省全选（隐含选中其所有城市）
 var filters = {
   provinceCity: { province: [], city: [], partial: [] },
+  subject: [],
+  major: [],
+  '学科等级': [],
+  '专业等级': [],
   category: [],
   level: [],
   admin: [],
@@ -383,10 +432,15 @@ var filters = {
   keyword: ''
 };
 var mapChart, barChart, pieChart;
+var RANK_FILTER_EXPANDED = { subject: {}, major: {} };
 
 // 筛选维度配置：ms-wrap id -> filters 中的键名
 var MS_KEYS = {
   msProvince: 'provinceCity',
+  msSubject: 'subject',
+  msMajor: 'major',
+  msSubjectLevel: '学科等级',
+  msMajorGrade: '专业等级',
   msCategory: 'category',
   msLevel: 'level',
   msAdmin: 'admin',
@@ -404,6 +458,10 @@ function init() {
 
   // 构建下拉多选选项
   renderProvinceCity();
+  renderRankFilter('msSubject', 'subject', RANKING_FILTER_TREE.subject || {});
+  renderRankFilter('msMajor', 'major', RANKING_FILTER_TREE.major || {});
+  renderMultiSelect('msSubjectLevel', '学科等级', rankingFilterOptions('bcsr', 'level'));
+  renderMultiSelect('msMajorGrade', '专业等级', rankingFilterOptions('bcmr', 'grade'));
   renderMultiSelect('msCategory', 'category', unique(allData.map(d => d.categoryName)).filter(Boolean));
   renderMultiSelect('msLevel', 'level', unique(allData.map(d => d.level)).filter(Boolean));
   renderMultiSelect('msAdmin', 'admin', unique(allData.map(d => d.adminType)).filter(Boolean));
@@ -885,6 +943,146 @@ function renderMultiSelect(wrapId, key, options) {
   if (isOpen) wrap.classList.add('ms-open');
 }
 
+function renderRankFilter(wrapId, key, codeNames) {
+  var wrap = document.getElementById(wrapId);
+  if (!wrap) return;
+  var isOpen = wrap.classList.contains('ms-open');
+  wrap.innerHTML = '';
+
+  var trigger = document.createElement('div');
+  trigger.className = 'ms-trigger';
+  trigger.innerHTML = '<span class="ms-trigger-label">' + (key === 'subject' ? '学科' : '专业') + '</span><span class="ms-trigger-count"></span><span class="ms-caret">▾</span>';
+  trigger.addEventListener('click', function(e) {
+    e.stopPropagation();
+    var opening = !wrap.classList.contains('ms-open');
+    document.querySelectorAll('.ms-dropdown.ms-open').forEach(function(d) { if (d !== wrap) d.classList.remove('ms-open'); });
+    wrap.classList.toggle('ms-open', opening);
+  });
+  wrap.appendChild(trigger);
+
+  var panel = document.createElement('div');
+  panel.className = 'ms-panel';
+  panel.addEventListener('click', function(e) { e.stopPropagation(); });
+  var search = document.createElement('input');
+  search.className = 'ms-search';
+  search.placeholder = key === 'subject' ? '搜索学科...' : '搜索专业...';
+  panel.appendChild(search);
+  var list = document.createElement('div');
+  list.className = 'ms-panel-list';
+  panel.appendChild(list);
+  wrap.appendChild(panel);
+
+  function childrenOf(code) {
+    return Object.keys(codeNames).filter(function(child) {
+      return child.length > code.length && child.indexOf(code) === 0 && child.length === code.length + (key === 'subject' ? 2 : 2);
+    }).sort();
+  }
+
+  function leavesOf(code) {
+    var descendants = Object.keys(codeNames).filter(function(child) {
+      return child.indexOf(code) === 0 && child.length > code.length;
+    });
+    return descendants.filter(function(child) { return childrenOf(child).length === 0; });
+  }
+
+  function branchMatches(code, kw) {
+    if (!kw) return true;
+    if (codeNames[code].indexOf(kw) !== -1) return true;
+    return childrenOf(code).some(function(child) { return branchMatches(child, kw); });
+  }
+
+  function render() {
+    var selected = filters[key] || [];
+    var kw = search.value.trim();
+    list.innerHTML = '';
+    trigger.querySelector('.ms-trigger-count').textContent = selected.length ? '已选 ' + selected.length : '全部';
+    var allLeaves = Object.keys(codeNames).filter(function(code) { return childrenOf(code).length === 0; });
+    var allSelected = allLeaves.length > 0 && allLeaves.every(function(code) { return selected.indexOf(code) !== -1; });
+    var allRow = document.createElement('div');
+    allRow.className = 'ms-opt ms-all-row' + (allSelected ? ' ms-checked' : '');
+    var allCheckbox = document.createElement('input');
+    allCheckbox.type = 'checkbox'; allCheckbox.checked = allSelected;
+    allRow.appendChild(allCheckbox);
+    var allLabel = document.createElement('span'); allLabel.textContent = '全选'; allRow.appendChild(allLabel);
+    allRow.addEventListener('click', function(e) {
+      if (e.target !== allCheckbox) allCheckbox.checked = !allCheckbox.checked;
+      filters[key] = allCheckbox.checked ? allLeaves.slice() : [];
+      RANK_FILTER_EXPANDED[key] = {};
+      renderRankFilter(wrapId, key, codeNames);
+      applyFilters();
+    });
+    list.appendChild(allRow);
+    var roots = Object.keys(codeNames).filter(function(code) {
+      return code.length === 2 && branchMatches(code, kw);
+    }).sort();
+    roots.forEach(function(root) { renderNode(root, 0, kw); });
+    if (!list.children.length) {
+      var empty = document.createElement('div');
+      empty.className = 'ms-empty'; empty.textContent = '无匹配选项'; list.appendChild(empty);
+    }
+  }
+
+  function renderNode(code, level, kw) {
+    var selected = filters[key] || [];
+    var name = codeNames[code];
+    var descendants = childrenOf(code);
+    var match = branchMatches(code, kw);
+    if (!match) return;
+    var leaves = descendants.length ? leavesOf(code) : [code];
+    var selectedCount = leaves.filter(function(leaf) { return selected.indexOf(leaf) !== -1; }).length;
+    var isSelected = leaves.length > 0 && selectedCount === leaves.length;
+    var isPartial = selectedCount > 0 && !isSelected;
+    var expanded = !!kw || !!RANK_FILTER_EXPANDED[key][code];
+    var row = document.createElement('div');
+    row.className = 'ms-opt' + (isSelected ? ' ms-checked' : '');
+    row.style.paddingLeft = (8 + level * 18) + 'px';
+    var arrow = document.createElement('span');
+    arrow.className = 'ms-arrow' + (expanded ? ' ms-arrow-open' : '') + (descendants.length ? '' : ' ms-arrow-none');
+    arrow.textContent = descendants.length ? '▸' : '';
+    row.appendChild(arrow);
+    var checkbox = document.createElement('input');
+    checkbox.type = 'checkbox'; checkbox.checked = isSelected; checkbox.indeterminate = isPartial;
+    row.appendChild(checkbox);
+    var label = document.createElement('span');
+    label.className = 'ms-prov-label';
+    label.textContent = code + ' ' + name;
+    row.appendChild(label);
+    var badge = document.createElement('span');
+    badge.className = 'ms-prov-badge';
+    badge.textContent = isPartial ? '部分选择' : '';
+    row.appendChild(badge);
+    row.addEventListener('click', function(e) {
+      if (e.target === arrow || e.target === label || e.target === badge) {
+        if (descendants.length) {
+          RANK_FILTER_EXPANDED[key][code] = !expanded;
+          render();
+        }
+        return;
+      }
+      var next = (filters[key] || []).filter(function(value) { return leaves.indexOf(value) === -1; });
+      if (!isSelected) {
+        leaves.forEach(function(leaf) {
+          if (next.indexOf(leaf) === -1) next.push(leaf);
+        });
+      } else {
+        // 取消父级或叶子时，移除该节点覆盖的全部叶子
+      }
+      filters[key] = next;
+      renderRankFilter(wrapId, key, codeNames);
+      wrap.classList.add('ms-open');
+      var newSearch = wrap.querySelector('.ms-search');
+      if (newSearch) { newSearch.value = kw; newSearch.focus(); }
+      applyFilters();
+    });
+    list.appendChild(row);
+    if (expanded) descendants.forEach(function(child) { renderNode(child, level + 1, kw); });
+  }
+
+  search.addEventListener('input', render);
+  render();
+  if (isOpen) wrap.classList.add('ms-open');
+}
+
 function parseTags(tags) {
   if (!tags) return [];
   var cleaned = tags.replace(/^\[|\]$/g, '');
@@ -901,6 +1099,10 @@ function getFilteredData() {
       // 该省处于部分选择时，城市须匹配；否则（全选）匹配该省所有城市
       if (pc.partial.indexOf(d.provinceShort) !== -1 && pc.city.indexOf(d.cityName) === -1) return false;
     }
+    if (!matchesRankingFilter(d, 'subject', filters.subject)) return false;
+    if (!matchesRankingFilter(d, 'major', filters.major)) return false;
+    if (!matchesRankingValueFilter(d, 'bcsr', 'level', filters['学科等级'])) return false;
+    if (!matchesRankingValueFilter(d, 'bcmr', 'grade', filters['专业等级'])) return false;
     if (filters.category.length && filters.category.indexOf(d.categoryName) === -1) return false;
     if (filters.level.length && filters.level.indexOf(d.level) === -1) return false;
     if (filters.admin.length && filters.admin.indexOf(d.adminType) === -1) return false;
@@ -914,6 +1116,34 @@ function getFilteredData() {
   });
 }
 
+function matchesRankingFilter(d, type, selectedCodes) {
+  if (!selectedCodes.length) return true;
+  var ranking = getRanking(d);
+  var records = ranking[type === 'subject' ? 'bcsr' : 'bcmr'] || [];
+  return selectedCodes.some(function(code) {
+    return records.some(function(item) { return item.code && item.code.indexOf(code) === 0; });
+  });
+}
+
+function rankingFilterOptions(type, field) {
+  var values = [];
+  Object.keys(rankingData).forEach(function(key) {
+    (rankingData[key][type] || []).forEach(function(item) {
+      if (item[field] && values.indexOf(item[field]) === -1) values.push(item[field]);
+    });
+  });
+  return values.sort(function(a, b) { return a.localeCompare(b, 'zh-CN', { numeric: true }); });
+}
+
+function matchesRankingValueFilter(d, type, field, selectedValues) {
+  if (!selectedValues.length) return true;
+  var ranking = getRanking(d);
+  var records = ranking[type] || [];
+  return selectedValues.some(function(value) {
+    return records.some(function(item) { return item[field] === value; });
+  });
+}
+
 function applyFilters() {
   var data = getFilteredData();
   document.getElementById('statShown').textContent = data.length;
@@ -922,17 +1152,22 @@ function applyFilters() {
   renderBar(data);
   renderPie(data);
   renderTable(data);
+  renderRankingStats(data);
 }
 
 function resetFilters() {
-  filters = { provinceCity: { province: [], city: [], partial: [] }, category: [], level: [], admin: [], tag: [], keyword: '' };
+  filters = { provinceCity: { province: [], city: [], partial: [] }, subject: [], major: [], '学科等级': [], '专业等级': [], category: [], level: [], admin: [], tag: [], keyword: '' };
   PROVINCE_EXPANDED = {}; // 重置省份展开状态
+  RANK_FILTER_EXPANDED = { subject: {}, major: {} };
   // 重建所有下拉选项（重置选项状态）
   Object.keys(MS_KEYS).forEach(function(id) {
     var key = MS_KEYS[id];
-    renderMultiSelect(id, key, getOptionsFor(key));
+    if (key === 'provinceCity') renderProvinceCity();
+    else if (key === 'subject' || key === 'major') renderRankFilter(id, key, RANKING_FILTER_TREE[key] || {});
+    else if (key === '学科等级') renderMultiSelect(id, key, rankingFilterOptions('bcsr', 'level'));
+    else if (key === '专业等级') renderMultiSelect(id, key, rankingFilterOptions('bcmr', 'grade'));
+    else renderMultiSelect(id, key, getOptionsFor(key));
   });
-  renderProvinceCity();
   document.getElementById('filterKeyword').value = '';
   applyFilters();
 }
@@ -950,6 +1185,8 @@ function getOptionsFor(key) {
     });
     return Array.from(tagSet);
   }
+  if (key === '学科等级') return rankingFilterOptions('bcsr', 'level');
+  if (key === '专业等级') return rankingFilterOptions('bcmr', 'grade');
   return [];
 }
 
@@ -961,8 +1198,9 @@ function renderMap(data) {
       provCount[d.provinceShort] = (provCount[d.provinceShort] || 0) + 1;
     }
   });
-  var mapData = Object.keys(provCount).map(function(p) {
-    return { name: p, value: provCount[p] };
+  var allProvinces = PROVINCE_TREE ? Object.keys(PROVINCE_TREE) : unique(allData.map(function(d) { return d.provinceShort; })).filter(Boolean);
+  var mapData = allProvinces.map(function(p) {
+    return { name: p, value: provCount[p] || 0 };
   });
 
   mapChart.setOption({
@@ -986,7 +1224,7 @@ function renderMap(data) {
     series: [{
       type: 'map',
       map: 'china',
-      roam: true,
+      roam: false,
       label: { show: false },
       emphasis: {
         label: { show: true, color: '#333' },
@@ -1003,7 +1241,7 @@ function renderMap(data) {
   // 点击省份筛选（切换该省份在树形下拉中的选中状态）
   mapChart.off('click');
   mapChart.on('click', function(params) {
-    if (params.name && provCount[params.name]) {
+    if (params.name && allProvinces.indexOf(params.name) !== -1) {
       var pc = filters.provinceCity;
       var selProv = pc.province.slice();
       var selCity = pc.city.slice();
@@ -1072,6 +1310,30 @@ function renderPie(data) {
   });
 }
 
+function getRanking(d) {
+  var key = d.univCode || d.nameCn;
+  return rankingData[key] || {};
+}
+
+function formatRank(rank) {
+  return rank ? '第' + escapeHtml(rank) + '名' : '—';
+}
+
+function renderRankingStats(data) {
+  var bcur = 0, bcvcr = 0, bcmr = 0, bcsr = 0;
+  data.forEach(function(d) {
+    var ranking = getRanking(d);
+    if (ranking.bcur) bcur++;
+    if (ranking.bcvcr) bcvcr++;
+    bcmr += (ranking.bcmr || []).length;
+    bcsr += (ranking.bcsr || []).length;
+  });
+  document.getElementById('rankStatBcur').textContent = bcur;
+  document.getElementById('rankStatBcvcr').textContent = bcvcr;
+  document.getElementById('rankStatBcmr').textContent = bcmr;
+  document.getElementById('rankStatBcsr').textContent = bcsr;
+}
+
 // ============ 表格 ============
 function renderTable(data) {
   var tbody = document.getElementById('univTableBody');
@@ -1085,9 +1347,17 @@ function renderTable(data) {
       '<td>' + escapeHtml(d.cityName) + '</td>' +
       '<td>' + escapeHtml(d.categoryName) + '</td>' +
       '<td>' + escapeHtml(d.level) + '</td>' +
+      '<td>' + renderOverallRank(d) + '</td>' +
       '<td>' + renderTags(d.tags) + '</td>';
     tbody.appendChild(tr);
   });
+}
+
+function renderOverallRank(d) {
+  var ranking = getRanking(d);
+  var item = ranking.bcur || ranking.bcvcr;
+  if (!item) return '<span class="badge">—</span>';
+  return '<span class="badge rank-badge">' + escapeHtml(item.title) + ' ' + formatRank(item.rank) + '</span>';
 }
 
 function renderTags(tags) {
@@ -1121,9 +1391,28 @@ function showDetail(d) {
     (d.phone ? '<span>📞 ' + escapeHtml(d.phone) + '</span>' : '') +
     (d.email ? '<span>✉️ ' + escapeHtml(d.email) + '</span>' : '') +
     (d.publishedAt ? '<span>📅 更新于 ' + escapeHtml(d.publishedAt) + '</span>' : '');
+  renderDetailRankings(d);
   document.getElementById('mInds').textContent = formatInds(d.inds);
   document.getElementById('mReason').textContent = formatReason(d.reason);
   document.getElementById('modalOverlay').classList.add('show');
+}
+
+function renderDetailRankings(d) {
+  var ranking = getRanking(d);
+  var items = [];
+  if (ranking.bcur) {
+    items.push('<div class="rank-item"><strong>' + escapeHtml(ranking.bcur.title) + '</strong>' + formatRank(ranking.bcur.rank) + (ranking.bcur.score ? ' · 得分 ' + escapeHtml(ranking.bcur.score) : '') + '</div>');
+  }
+  if (ranking.bcvcr) {
+    items.push('<div class="rank-item"><strong>' + escapeHtml(ranking.bcvcr.title) + '</strong>' + formatRank(ranking.bcvcr.rank) + (ranking.bcvcr.score ? ' · 得分 ' + escapeHtml(ranking.bcvcr.score) : '') + '</div>');
+  }
+  (ranking.bcmr || []).forEach(function(item) {
+    items.push('<div class="rank-item"><strong>专业 · ' + escapeHtml(item.title) + '</strong>' + formatRank(item.rank) + (item.grade ? ' · ' + escapeHtml(item.grade) : '') + '</div>');
+  });
+  (ranking.bcsr || []).forEach(function(item) {
+    items.push('<div class="rank-item"><strong>学科 · ' + escapeHtml(item.title) + '</strong>' + formatRank(item.rank) + (item.level ? ' · ' + escapeHtml(item.level) : '') + '</div>');
+  });
+  document.getElementById('mRankings').innerHTML = items.length ? items.join('') : '<span class="rank-muted">暂无排名数据</span>';
 }
 
 function formatReason(reason) {

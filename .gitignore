@@ -199,4 +199,4 @@ csv/
 # 输出文件（由脚本生成，不纳入版本控制）
 output.csv
 data.js
-json/
+ranking_data.js
