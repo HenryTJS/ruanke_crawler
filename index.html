@@ -7,295 +7,432 @@
 <!-- ECharts CDN -->
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 <style>
+  :root {
+    --panel: rgba(26, 46, 84, .38);
+    --panel-hi: rgba(38, 64, 112, .34);
+    --stroke: rgba(96, 142, 214, .10);
+    --text: #e9f0fb;
+    --text-2: #9db0d2;
+    --text-3: #62779d;
+    --cyan: #34d3ff;
+    --blue: #4b8cff;
+    --violet: #9a7bff;
+    --mint: #2fe3b4;
+    --amber: #ffb057;
+    --rose: #ff7ab8;
+    --radius: 14px;
+    --radius-sm: 9px;
+  }
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
   body {
-    font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
-    background: #f0f2f5;
-    color: #333;
-  }
-  .header {
-    background: linear-gradient(135deg, #1e3c72, #2a5298);
-    color: #fff;
-    padding: 20px 30px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  }
-  .header h1 { font-size: 24px; font-weight: 600; }
-  .header .sub { font-size: 13px; opacity: 0.85; margin-top: 4px; }
-  .header .stats {
-    display: flex; gap: 30px; text-align: center;
-  }
-  .header .stats .num { font-size: 26px; font-weight: 700; }
-  .header .stats .label { font-size: 12px; opacity: 0.85; }
-
-  .container { max-width: 1400px; margin: 20px auto; padding: 0 20px; }
-
-  /* 筛选器 */
-  .filter-bar {
-    background: #fff;
-    border-radius: 10px;
-    padding: 18px 22px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-    margin-bottom: 20px;
-  }
-  .filter-row {
-    display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start;
-  }
-  .filter-item { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
-  .filter-item label {
-    font-size: 13px; color: #666; font-weight: 600;
-  }
-  .filter-item input {
-    padding: 8px 12px;
-    border: 1px solid #d9d9d9;
-    border-radius: 6px;
+    font-family: "Inter", "Microsoft YaHei", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+    color: var(--text);
     font-size: 14px;
-    min-width: 200px;
-    background: #fff;
-    outline: none;
-    transition: border-color 0.2s;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    background:
+      radial-gradient(1100px 620px at 50% -8%, rgba(59,130,246,.22), transparent 62%),
+      radial-gradient(760px 520px at 4% 96%, rgba(52,211,255,.12), transparent 60%),
+      radial-gradient(760px 520px at 96% 92%, rgba(154,123,255,.12), transparent 60%),
+      linear-gradient(180deg, #050a16 0%, #070f22 45%, #050a16 100%);
+    background-attachment: fixed;
   }
-  .filter-item input:focus {
-    border-color: #2a5298;
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(96,142,214,.28); border-radius: 6px; border: 3px solid transparent; background-clip: content-box; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(96,142,214,.45); background-clip: content-box; }
+
+  /* ---------- 顶部大屏标题栏 ---------- */
+  .screen-header {
+    position: relative;
+    padding: 20px 32px 16px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 20px;
+    background: linear-gradient(180deg, rgba(12,24,48,.88), rgba(6,12,26,0));
   }
-  /* 下拉多选组件 */
-  .ms-dropdown { position: relative; }
+  .screen-header::after {
+    content: '';
+    position: absolute; left: 50%; bottom: 0; transform: translateX(-50%);
+    width: min(620px, 46%); height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(52,211,255,.85), rgba(75,140,255,.5), transparent);
+    box-shadow: 0 0 16px rgba(52,211,255,.55);
+  }
+  .screen-header h1 {
+    font-size: 25px; font-weight: 700; letter-spacing: 5px; text-align: center;
+    background: linear-gradient(180deg, #ffffff 8%, #8dc2ff 92%);
+    -webkit-background-clip: text; background-clip: text;
+    color: transparent; white-space: nowrap;
+    text-shadow: 0 0 34px rgba(80,160,255,.35);
+  }
+  .screen-header .sub {
+    text-align: center; font-size: 12px; letter-spacing: 2.4px;
+    color: rgba(157,176,210,.72); margin-top: 6px;
+  }
+  .header-side { display: flex; align-items: center; gap: 12px; }
+  .header-side.right { justify-content: flex-end; }
+  .kpi {
+    min-width: 104px; padding: 8px 14px; text-align: center;
+    border-radius: 11px;
+    background: linear-gradient(160deg, rgba(52,211,255,.10), rgba(75,140,255,.05));
+    border: 1px solid rgba(96,142,214,.16);
+  }
+  .kpi .num {
+    font-size: 22px; font-weight: 700; letter-spacing: .4px;
+    font-variant-numeric: tabular-nums;
+    color: #eaf5ff; text-shadow: 0 0 18px rgba(52,211,255,.5);
+  }
+  .kpi .label { font-size: 11.5px; color: rgba(157,176,210,.8); margin-top: 2px; letter-spacing: .6px; }
+
+  /* ---------- 面板（弱化轮廓） ---------- */
+  .panel {
+    position: relative;
+    border-radius: var(--radius);
+    padding: 14px 16px 10px;
+    background: linear-gradient(165deg, var(--panel-hi), var(--panel) 55%, rgba(10,20,40,.3));
+    border: 1px solid var(--stroke);
+    box-shadow: inset 0 1px 0 rgba(140,190,255,.06);
+  }
+  .panel::before {
+    content: ''; position: absolute; left: 14px; right: 14px; top: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(52,211,255,.5), transparent);
+    opacity: .7;
+  }
+  .panel h3 {
+    display: flex; align-items: center; gap: 9px;
+    font-size: 13.5px; font-weight: 600; letter-spacing: .9px;
+    color: #d3e4ff; margin-bottom: 8px;
+  }
+  .panel h3::before {
+    content: ''; width: 3px; height: 12px; border-radius: 2px;
+    background: linear-gradient(180deg, var(--cyan), var(--blue));
+    box-shadow: 0 0 9px rgba(52,211,255,.75);
+  }
+  .panel h3 .unit { margin-left: auto; font-size: 11px; font-weight: 400; color: var(--text-3); letter-spacing: 0; }
+
+  /* ---------- 大屏布局 ---------- */
+  .screen {
+    max-width: 1880px; margin: 0 auto;
+    padding: 18px 26px 30px;
+    display: grid;
+    grid-template-columns: minmax(280px, 330px) minmax(0, 1fr) minmax(280px, 330px);
+    gap: 16px; align-items: start;
+  }
+  .side-col { display: flex; flex-direction: column; gap: 16px; }
+  .center-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .screen-top { max-width: 1880px; margin: 0 auto; padding: 0 26px; }
+
+  /* ---------- 筛选区 ---------- */
+  .filter-panel { margin-bottom: 16px; padding: 12px 16px 14px; }
+  .filter-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; margin-bottom: 12px; padding-bottom: 10px;
+    border-bottom: 1px solid var(--stroke);
+  }
+  .filter-head h2 {
+    display: flex; align-items: baseline; gap: 9px;
+    font-size: 13px; font-weight: 600; letter-spacing: .8px; color: #d3e4ff;
+  }
+  .filter-head .hint { font-size: 11.5px; font-weight: 400; color: var(--text-3); letter-spacing: 0; }
+  .filter-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+    gap: 10px 12px;
+  }
+  .filter-item { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .filter-item > label { font-size: 11px; font-weight: 600; letter-spacing: .5px; color: var(--text-3); }
+  .filter-item input[type="text"] {
+    height: 34px; padding: 0 11px; width: 100%;
+    font-family: inherit; font-size: 12.5px; outline: none;
+    color: var(--text); border-radius: var(--radius-sm);
+    border: 1px solid rgba(96,142,214,.18);
+    background: rgba(8,16,34,.6);
+    transition: border-color .16s, box-shadow .16s;
+  }
+  .filter-item input[type="text"]::placeholder { color: #5d7196; }
+  .filter-item input[type="text"]:focus {
+    border-color: rgba(52,211,255,.6);
+    box-shadow: 0 0 0 3px rgba(52,211,255,.1);
+  }
+  .filter-actions { display: flex; gap: 8px; }
+  .btn {
+    height: 34px; padding: 0 16px;
+    font-family: inherit; font-size: 12.5px; font-weight: 600;
+    letter-spacing: .4px; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: var(--radius-sm); border: 1px solid transparent;
+    transition: background .16s, border-color .16s, color .16s, box-shadow .16s;
+  }
+  .btn-primary { background: linear-gradient(160deg, #4b8cff, #2f6ae0); color: #fff; }
+  .btn-reset { color: #a9bede; background: rgba(96,142,214,.08); border-color: rgba(96,142,214,.2); }
+  .btn-reset:hover { color: #e6f3ff; background: rgba(96,142,214,.18); border-color: rgba(52,211,255,.45); }
+
+  /* ---------- 下拉多选 ---------- */
+  .ms-dropdown { position: relative; width: 100%; }
   .ms-trigger {
-    display: inline-flex; align-items: center; gap: 8px;
-    min-width: 150px; padding: 8px 12px;
-    border: 1px solid #d9d9d9; border-radius: 6px;
-    background: #fff; cursor: pointer; font-size: 13px;
+    display: flex; align-items: center; gap: 8px;
+    width: 100%; height: 34px; padding: 0 11px;
+    font-size: 12.5px; color: var(--text); cursor: pointer;
+    border-radius: var(--radius-sm);
+    background: rgba(8,16,34,.6);
+    border: 1px solid rgba(96,142,214,.18);
     -webkit-user-select: none; user-select: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition: border-color .16s, box-shadow .16s;
   }
-  .ms-trigger:hover { border-color: #2a5298; }
+  .ms-trigger:hover { border-color: rgba(96,142,214,.4); }
   .ms-dropdown.ms-open .ms-trigger {
-    border-color: #2a5298;
-    box-shadow: 0 0 0 2px rgba(42,82,152,0.15);
+    border-color: rgba(52,211,255,.6);
+    box-shadow: 0 0 0 3px rgba(52,211,255,.1);
   }
-  .ms-trigger-label { color: #666; font-weight: 600; }
-  .ms-trigger-count { color: #2a5298; font-weight: 600; margin-left: auto; }
-  .ms-caret { color: #999; transition: transform 0.2s; }
+  .ms-trigger-label { color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ms-trigger-count {
+    margin-left: auto; flex-shrink: 0;
+    font-size: 11px; font-weight: 600; color: var(--cyan);
+    background: rgba(52,211,255,.12); border-radius: 6px; padding: 2px 7px;
+  }
+  .ms-caret { color: #5d7196; font-size: 10px; flex-shrink: 0; transition: transform .2s; }
   .ms-dropdown.ms-open .ms-caret { transform: rotate(180deg); }
   .ms-panel {
-    position: absolute; top: calc(100% + 4px); left: 0; z-index: 100;
-    min-width: 230px; max-width: 320px;
-    background: #fff; border: 1px solid #e0e0e0; border-radius: 8px;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    position: absolute; top: calc(100% + 6px); left: 0; z-index: 900;
+    min-width: 100%; width: max-content; max-width: 340px;
     display: none; flex-direction: column; overflow: hidden;
+    border-radius: 13px;
+    background: linear-gradient(180deg, #0d1a34, #0a1428);
+    border: 1px solid rgba(96,142,214,.24);
+    box-shadow: 0 26px 60px -20px rgba(0,0,0,.9);
   }
   .ms-dropdown.ms-open .ms-panel { display: flex; }
   .ms-search {
-    border: none; border-bottom: 1px solid #f0f0f0;
-    padding: 10px 12px; font-size: 13px; outline: none;
+    padding: 10px 13px; font-size: 12.5px; font-family: inherit;
+    outline: none; color: var(--text);
+    background: rgba(255,255,255,.03);
+    border: none; border-bottom: 1px solid var(--stroke);
   }
-  .ms-search:focus { background: #fafbff; }
-  .ms-panel-list { max-height: 260px; overflow-y: auto; padding: 6px; }
+  .ms-search::placeholder { color: #5d7196; }
+  .ms-search:focus { background: rgba(52,211,255,.05); }
+  .ms-panel-list { max-height: 290px; overflow-y: auto; padding: 7px; }
   .ms-opt {
-    display: flex; align-items: center; gap: 6px;
-    padding: 5px 8px; border-radius: 5px;
-    font-size: 13px; color: #444; cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 9px; border-radius: 7px;
+    font-size: 12.5px; color: var(--text-2); cursor: pointer;
     -webkit-user-select: none; user-select: none; white-space: nowrap;
+    transition: background .14s, color .14s;
   }
-  .ms-opt:hover { background: #f5f8ff; color: #2a5298; }
+  .ms-opt:hover { background: rgba(52,211,255,.08); color: #d9f1ff; }
   .ms-opt input[type="checkbox"] {
-    width: 14px; height: 14px; min-width: 14px;
-    margin: 0; cursor: pointer; flex-shrink: 0;
-    accent-color: #2a5298;
+    width: 13px; height: 13px; min-width: 13px; margin: 0;
+    cursor: pointer; flex-shrink: 0; accent-color: #34d3ff;
   }
-  .ms-opt.ms-checked { color: #2a5298; font-weight: 600; }
-  /* 顶部"全选"行 */
-  .ms-all-row {
-    border-bottom: 1px solid #f0f0f0;
-    margin-bottom: 4px;
-    border-radius: 5px;
-    color: #2a5298;
-    font-weight: 600;
-  }
-  .ms-all-row.ms-checked { background: #f0f5ff; }
-  .ms-empty { padding: 10px; font-size: 13px; color: #999; text-align: center; }
-  /* 省份-城市树形 */
+  .ms-opt.ms-checked { color: var(--cyan); font-weight: 600; }
+  .ms-all-row { margin-bottom: 5px; border-radius: 7px; color: var(--cyan); font-weight: 600; border-bottom: 1px solid var(--stroke); }
+  .ms-all-row.ms-checked { background: rgba(52,211,255,.1); }
+  .ms-empty { padding: 14px; text-align: center; font-size: 12.5px; color: var(--text-3); }
   .ms-prov { font-weight: 400; }
-  .ms-arrow { color: #999; font-size: 11px; transition: transform 0.15s; width: 14px; flex-shrink: 0; }
+  .ms-arrow { width: 13px; flex-shrink: 0; font-size: 10px; color: #5d7196; transition: transform .16s; }
   .ms-arrow-open { transform: rotate(90deg); }
   .ms-arrow-none { visibility: hidden; }
-  .ms-prov-label { flex: 1; }
-  .ms-prov-badge { color: #2a5298; font-size: 11px; background: #eef3ff; border-radius: 4px; padding: 1px 6px; }
-  .ms-city { padding-left: 20px; font-weight: 400; color: #444; }
-  .ms-indent { color: #bbb; width: 12px; flex-shrink: 0; font-size: 11px; }
-  .btn {
-    padding: 8px 18px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: opacity 0.2s;
-  }
-  .btn-primary { background: #2a5298; color: #fff; }
-  .btn-primary:hover { opacity: 0.9; }
-  .btn-reset { background: #f0f0f0; color: #555; }
-  .btn-reset:hover { background: #e0e0e0; }
-  .filter-actions { display: flex; gap: 10px; margin-left: auto; }
+  .ms-prov-label { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+  .ms-prov-badge { flex-shrink: 0; font-size: 10.5px; color: var(--cyan); background: rgba(52,211,255,.12); border-radius: 5px; padding: 1px 6px; }
+  .ms-city { padding-left: 22px; font-weight: 400; color: var(--text-2); }
+  .ms-indent { width: 12px; flex-shrink: 0; font-size: 11px; color: #45577a; }
 
-  /* 图表区域 */
-  .charts-grid {
-    display: grid;
-    grid-template-columns: 1.6fr 1fr;
-    gap: 20px;
-    margin-bottom: 20px;
-  }
-  .card {
-    background: #fff;
-    border-radius: 10px;
-    padding: 16px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-  }
-  .card h3 {
-    font-size: 16px; color: #1e3c72;
-    margin-bottom: 10px;
-    padding-bottom: 8px;
-    border-bottom: 2px solid #f0f0f0;
-  }
+  /* ---------- 图表尺寸 ---------- */
   #mapChart { width: 100%; height: 520px; }
-  #barChart { width: 100%; height: 320px; }
-  #pieChart { width: 100%; height: 250px; }
+  #rankLineChart { width: 100%; height: 230px; }
+  #categoryBarChart { width: 100%; height: 340px; }
+  #adminPieChart, #majorFunnelChart { width: 100%; height: 240px; }
+  #cityTreemapChart { width: 100%; height: 300px; }
+  #subjectPolarChart, #provinceScatterChart { width: 100%; height: 220px; }
 
-  /* 列表 */
-  .list-card { background: #fff; border-radius: 10px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  /* ---------- 列表 ---------- */
+  .list-panel { padding: 14px 16px 6px; }
   .list-header {
     display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 12px;
+    margin-bottom: 12px; padding-bottom: 10px;
+    border-bottom: 1px solid var(--stroke);
   }
-  .list-header h3 { font-size: 16px; color: #1e3c72; }
-  .list-header .count { font-size: 13px; color: #888; }
-  table { width: 100%; border-collapse: collapse; }
+  .list-header h3 {
+    display: flex; align-items: center; gap: 9px;
+    font-size: 13.5px; font-weight: 600; letter-spacing: .9px; color: #d3e4ff;
+  }
+  .list-header h3::before {
+    content: ''; width: 3px; height: 12px; border-radius: 2px;
+    background: linear-gradient(180deg, var(--cyan), var(--blue));
+    box-shadow: 0 0 9px rgba(52,211,255,.75);
+  }
+  .list-header .count { font-size: 12px; color: var(--text-2); }
+  .list-header .count b { color: var(--cyan); font-variant-numeric: tabular-nums; text-shadow: 0 0 12px rgba(52,211,255,.5); }
+  table { width: 100%; border-collapse: separate; border-spacing: 0; }
   thead th {
-    background: #f7f8fa;
-    padding: 10px 12px;
-    text-align: left;
-    font-size: 13px;
-    color: #555;
-    border-bottom: 2px solid #e8e8e8;
-    position: sticky; top: 0;
+    position: sticky; top: 0; z-index: 2;
+    padding: 10px 14px; text-align: left;
+    font-size: 11px; font-weight: 600; letter-spacing: .6px;
+    color: var(--text-3);
+    background: rgba(9,17,35,.94);
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    border-bottom: 1px solid rgba(96,142,214,.16);
     white-space: nowrap;
   }
   tbody td {
-    padding: 10px 12px;
-    border-bottom: 1px solid #f0f0f0;
-    font-size: 14px;
+    padding: 10px 14px;
+    font-size: 13px; color: var(--text-2);
+    border-bottom: 1px solid rgba(96,142,214,.07);
     vertical-align: middle;
   }
-  tbody tr:hover { background: #f5f8ff; cursor: pointer; }
+  tbody td:first-child { color: var(--text); }
+  tbody tr:hover { background: rgba(52,211,255,.06); cursor: pointer; }
+  tbody tr:hover td:first-child { color: #9fe6ff; }
   .tag {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    margin-right: 4px;
-    background: #e6f0ff;
-    color: #2a5298;
+    display: inline-block; margin-right: 4px;
+    padding: 2px 8px; border-radius: 6px;
+    font-size: 11px; font-weight: 500;
+    color: #8fd4ff; background: rgba(52,211,255,.12);
   }
-  .tag-985 { background: #fff1e6; color: #d46b08; }
-  .tag-211 { background: #e6fffb; color: #08979c; }
-  .tag-syl { background: #f9f0ff; color: #722ed1; }
+  .tag-985 { color: #ffc781; background: rgba(255,176,87,.14); }
+  .tag-211 { color: #7df7d3; background: rgba(47,227,180,.13); }
+  .tag-syl { color: #c1b0ff; background: rgba(154,123,255,.16); }
   .badge {
     display: inline-block;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    background: #f0f0f0;
-    color: #555;
+    padding: 2px 8px; border-radius: 6px;
+    font-size: 11px; color: var(--text-2);
+    background: rgba(96,142,214,.12);
   }
-  .list-wrapper { max-height: 600px; overflow-y: auto; }
+  .list-wrapper { max-height: 560px; overflow-y: auto; margin: 0 -16px; padding: 0 16px; }
 
-  /* 详情弹窗 */
+  /* ---------- 详情弹窗 ---------- */
   .modal-overlay {
     display: none;
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 1000;
-    justify-content: center; align-items: center;
+    z-index: 2000; padding: 24px;
+    align-items: center; justify-content: center;
+    background: rgba(3,7,16,.72);
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
   }
   .modal-overlay.show { display: flex; }
   .modal {
-    background: #fff;
-    border-radius: 12px;
-    width: 90%;
-    max-width: 760px;
-    max-height: 85vh;
-    overflow-y: auto;
-    padding: 24px 28px;
     position: relative;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    width: 100%; max-width: 800px; max-height: 86vh;
+    padding: 26px 28px; overflow-y: auto;
+    border-radius: 18px;
+    background: linear-gradient(170deg, #102040, #0a1428 65%, #081020);
+    border: 1px solid rgba(96,142,214,.22);
+    box-shadow: 0 40px 100px -30px rgba(0,0,0,.95), inset 0 1px 0 rgba(140,190,255,.08);
   }
   .modal-close {
-    position: absolute; top: 14px; right: 18px;
-    font-size: 24px; cursor: pointer; color: #999;
-    background: none; border: none;
+    position: absolute; top: 18px; right: 18px;
+    width: 32px; height: 32px; font-size: 19px; line-height: 1;
+    display: grid; place-items: center; cursor: pointer;
+    color: var(--text-3); border-radius: 9px;
+    background: rgba(96,142,214,.1);
+    border: 1px solid rgba(96,142,214,.18);
+    transition: color .16s, background .16s, border-color .16s;
   }
-  .modal-close:hover { color: #333; }
-  .modal h2 { font-size: 22px; color: #1e3c72; margin-bottom: 4px; }
-  .modal .en-name { color: #888; font-size: 14px; margin-bottom: 14px; }
-  .modal .meta { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
-  .modal .meta .badge { font-size: 13px; padding: 4px 10px; }
-  .modal .section { margin-bottom: 16px; }
+  .modal-close:hover { color: #fff; background: rgba(52,211,255,.16); border-color: rgba(52,211,255,.4); }
+  .modal h2 { font-size: 21px; font-weight: 680; color: #fff; margin-bottom: 4px; padding-right: 44px; }
+  .modal .en-name { font-size: 12.5px; color: var(--text-3); margin-bottom: 16px; }
+  .modal .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+  .modal .meta .badge { font-size: 12px; padding: 4px 10px; }
+  .modal .section { margin-bottom: 18px; }
   .modal .section h4 {
-    font-size: 15px; color: #2a5298;
-    margin-bottom: 8px; padding-bottom: 6px;
-    border-bottom: 1px solid #f0f0f0;
+    display: flex; align-items: center; gap: 9px;
+    font-size: 13px; font-weight: 600; letter-spacing: .8px; color: #cfe2ff;
+    margin-bottom: 10px; padding-bottom: 9px;
+    border-bottom: 1px solid var(--stroke);
   }
-  .modal .section p { font-size: 14px; line-height: 1.8; color: #444; white-space: pre-wrap; }
-  .modal .contact { font-size: 14px; color: #555; line-height: 1.9; }
+  .modal .section h4::before {
+    content: ''; width: 3px; height: 12px; border-radius: 2px;
+    background: linear-gradient(180deg, var(--cyan), var(--blue));
+    box-shadow: 0 0 9px rgba(52,211,255,.7);
+  }
+  .modal .section p { font-size: 13px; line-height: 1.85; color: var(--text-2); white-space: pre-wrap; }
+  .modal .contact { font-size: 13px; color: var(--text-2); line-height: 1.9; }
   .modal .contact span { margin-right: 20px; }
-  .ranking-summary {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
-    margin-bottom: 20px;
+  .rank-list { display: grid; gap: 7px; }
+  .rank-item {
+    padding: 9px 12px; font-size: 12.5px; color: var(--text-2);
+    border-radius: 9px;
+    background: rgba(96,142,214,.07);
+    border-left: 2px solid rgba(52,211,255,.5);
   }
-  .ranking-summary .rank-stat {
-    background: #fff; border-radius: 10px; padding: 14px 16px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-  }
-  .rank-stat .rank-stat-label { color: #777; font-size: 12px; }
-  .rank-stat .rank-stat-value { color: #1e3c72; font-size: 22px; font-weight: 700; margin-top: 4px; }
-  .rank-list { display: grid; gap: 8px; }
-  .rank-item { padding: 8px 10px; background: #f7f8fa; border-radius: 6px; font-size: 13px; }
-  .rank-item strong { color: #1e3c72; margin-right: 8px; }
-  .rank-muted { color: #999; }
-  .rank-badge { background: #fff7e6; color: #d46b08; }
+  .rank-item strong { margin-right: 8px; font-weight: 600; color: #cfe2ff; }
+  .rank-muted { font-size: 12.5px; color: var(--text-3); }
+  .rank-badge { color: #ffc781; background: rgba(255,176,87,.14); }
 
-  @media (max-width: 900px) {
-    .charts-grid { grid-template-columns: 1fr; }
-    .ranking-summary { grid-template-columns: repeat(2, 1fr); }
-    .header { flex-direction: column; gap: 12px; text-align: center; }
-    .filter-actions { margin-left: 0; }
+  /* ---------- 统计条 ---------- */
+  .ranking-summary {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px;
+    margin-bottom: 16px;
+  }
+  .rank-stat {
+    position: relative; overflow: hidden;
+    padding: 12px 16px; border-radius: var(--radius);
+    background: linear-gradient(160deg, var(--panel-hi), var(--panel) 60%, rgba(10,20,40,.3));
+    border: 1px solid var(--stroke);
+    box-shadow: inset 0 1px 0 rgba(140,190,255,.06);
+  }
+  .rank-stat::after {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+    background: linear-gradient(180deg, var(--cyan), rgba(75,140,255,0));
+  }
+  .rank-stat-label { font-size: 11px; letter-spacing: .5px; color: var(--text-3); }
+  .rank-stat-value {
+    margin-top: 4px; font-size: 23px; font-weight: 700;
+    color: #eaf5ff; font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 18px rgba(52,211,255,.4);
+  }
+
+  @media (max-width: 1500px) {
+    .screen { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 1fr); }
+  }
+  @media (max-width: 1100px) {
+    .screen { grid-template-columns: minmax(0, 1fr); padding: 14px 18px 24px; }
+    .screen-header { grid-template-columns: 1fr; gap: 14px; padding: 16px 18px 14px; }
+    .screen-header h1 { font-size: 20px; letter-spacing: 3px; }
+    .header-side, .header-side.right { justify-content: center; flex-wrap: wrap; }
+    #mapChart { height: 420px; }
+  }
+  @media (max-width: 560px) {
+    .ranking-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .screen-header h1 { font-size: 17px; letter-spacing: 1.5px; white-space: normal; }
   }
 </style>
 </head>
 <body>
 
-<div class="header">
+<!-- 大屏标题栏 -->
+<header class="screen-header">
+  <div class="header-side">
+    <div class="kpi"><div class="num" id="statTotal">0</div><div class="label">高校总数</div></div>
+    <div class="kpi"><div class="num" id="statProv">0</div><div class="label">覆盖省份</div></div>
+  </div>
   <div>
-    <h1>🎓 中国高校数据可视化平台</h1>
+    <h1>中国高校数据可视化平台</h1>
+    <div class="sub">SHANGHAI RANKING · 高校排名与学科专业实力大屏</div>
   </div>
-  <div class="stats">
-    <div><div class="num" id="statTotal">0</div><div class="label">高校总数</div></div>
-    <div><div class="num" id="statProv">0</div><div class="label">覆盖省份</div></div>
-    <div><div class="num" id="statShown">0</div><div class="label">当前显示</div></div>
+  <div class="header-side right">
+    <div class="kpi"><div class="num" id="statShown">0</div><div class="label">当前显示</div></div>
   </div>
-</div>
+</header>
 
-<div class="container ranking-summary" id="rankingSummary">
-  <div class="rank-stat"><div class="rank-stat-label">中国大学排名覆盖</div><div class="rank-stat-value" id="rankStatBcur">0</div></div>
-  <div class="rank-stat"><div class="rank-stat-label">中国高职院校排名覆盖</div><div class="rank-stat-value" id="rankStatBcvcr">0</div></div>
-  <div class="rank-stat"><div class="rank-stat-label">专业排名记录</div><div class="rank-stat-value" id="rankStatBcmr">0</div></div>
-  <div class="rank-stat"><div class="rank-stat-label">学科排名记录</div><div class="rank-stat-value" id="rankStatBcsr">0</div></div>
-</div>
+<div class="screen-top">
+  <div class="ranking-summary" id="rankingSummary">
+    <div class="rank-stat"><div class="rank-stat-label">中国大学排名覆盖</div><div class="rank-stat-value" id="rankStatBcur">0</div></div>
+    <div class="rank-stat"><div class="rank-stat-label">中国高职院校排名覆盖</div><div class="rank-stat-value" id="rankStatBcvcr">0</div></div>
+    <div class="rank-stat"><div class="rank-stat-label">专业排名记录</div><div class="rank-stat-value" id="rankStatBcmr">0</div></div>
+    <div class="rank-stat"><div class="rank-stat-label">学科排名记录</div><div class="rank-stat-value" id="rankStatBcsr">0</div></div>
+  </div>
 
-<div class="container">
   <!-- 筛选器 -->
-  <div class="filter-bar">
+  <div class="panel filter-panel">
+    <div class="filter-head">
+      <h2>筛选条件 <span class="hint">支持多选与组合筛选，全部图表实时联动</span></h2>
+      <div class="filter-actions">
+        <button class="btn btn-reset" onclick="resetFilters()">重置全部</button>
+      </div>
+    </div>
     <div class="filter-row">
       <div class="filter-item">
         <label>省份 / 城市</label>
@@ -337,35 +474,60 @@
         <label>关键词搜索</label>
         <input type="text" id="filterKeyword" placeholder="输入学校名称搜索...">
       </div>
-      <div class="filter-actions">
-        <button class="btn btn-reset" onclick="resetFilters()">重置</button>
-      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 大屏主区：地图居中，两侧环绕不同类型图表 -->
+<main class="screen">
+  <div class="side-col">
+    <div class="panel">
+      <h3>学校类别构成 <span class="unit">横向条形图</span></h3>
+      <div id="categoryBarChart"></div>
+    </div>
+    <div class="panel">
+      <h3>主管部门分布 <span class="unit">环形图</span></h3>
+      <div id="adminPieChart"></div>
+    </div>
+    <div class="panel">
+      <h3>专业评级分布 <span class="unit">漏斗图</span></h3>
+      <div id="majorFunnelChart"></div>
     </div>
   </div>
 
-  <!-- 图表 -->
-  <div class="charts-grid">
-    <div class="card">
-      <h3>🗺️ 各省高校数量分布</h3>
+  <div class="center-col">
+    <div class="panel">
+      <h3>各省高校数量分布 <span class="unit">点击省份可筛选</span></h3>
       <div id="mapChart"></div>
     </div>
-    <div>
-      <div class="card" style="margin-bottom:20px;">
-        <h3>📊 高校数量 Top 20 城市</h3>
-        <div id="barChart"></div>
-      </div>
-      <div class="card">
-        <h3>🥧 学校类别占比</h3>
-        <div id="pieChart"></div>
-      </div>
+    <div class="panel">
+      <h3>高校综合排名分段 <span class="unit">折线面积图</span></h3>
+      <div id="rankLineChart"></div>
     </div>
   </div>
 
-  <!-- 列表 -->
-  <div class="list-card">
+  <div class="side-col">
+    <div class="panel">
+      <h3>高校数量 Top 20 城市 <span class="unit">矩形树图</span></h3>
+      <div id="cityTreemapChart"></div>
+    </div>
+    <div class="panel">
+      <h3>学科等级分布 <span class="unit">极坐标柱状图</span></h3>
+      <div id="subjectPolarChart"></div>
+    </div>
+    <div class="panel">
+      <h3>各省平均综合排名 <span class="unit">散点图</span></h3>
+      <div id="provinceScatterChart"></div>
+    </div>
+  </div>
+</main>
+
+<!-- 高校列表 -->
+<div class="screen-top">
+  <div class="panel list-panel">
     <div class="list-header">
-      <h3>🏫 高校列表</h3>
-      <div class="count">共 <span id="listCount">0</span> 所</div>
+      <h3>高校列表</h3>
+      <div class="count">共 <b id="listCount">0</b> 所高校</div>
     </div>
     <div class="list-wrapper">
       <table>
@@ -393,17 +555,16 @@
     <h2 id="mName"></h2>
     <div class="en-name" id="mEnName"></div>
     <div class="meta" id="mMeta"></div>
-    <div class="contact" id="mContact"></div>
-    <div class="section">
-      <h4>🏅 软科排名</h4>
+    <div class="contact" id="mContact"></div>    <div class="section">
+      <h4>软科排名</h4>
       <div id="mRankings" class="rank-list"></div>
     </div>
     <div class="section">
-      <h4>🏠 校园环境</h4>
+      <h4>校园环境</h4>
       <p id="mInds"></p>
     </div>
     <div class="section">
-      <h4>📖 学校介绍</h4>
+      <h4>学校介绍</h4>
       <p id="mReason"></p>
     </div>
   </div>
@@ -431,7 +592,8 @@ var filters = {
   tag: [],
   keyword: ''
 };
-var mapChart, barChart, pieChart;
+var mapChart, rankLineChart, categoryBarChart, adminPieChart, majorFunnelChart;
+var cityTreemapChart, subjectPolarChart, provinceScatterChart;
 var RANK_FILTER_EXPANDED = { subject: {}, major: {} };
 
 // 筛选维度配置：ms-wrap id -> filters 中的键名
@@ -492,10 +654,18 @@ function init() {
 
   // 初始化图表
   mapChart = echarts.init(document.getElementById('mapChart'));
-  barChart = echarts.init(document.getElementById('barChart'));
-  pieChart = echarts.init(document.getElementById('pieChart'));
+  rankLineChart = echarts.init(document.getElementById('rankLineChart'));
+  categoryBarChart = echarts.init(document.getElementById('categoryBarChart'));
+  adminPieChart = echarts.init(document.getElementById('adminPieChart'));
+  majorFunnelChart = echarts.init(document.getElementById('majorFunnelChart'));
+  cityTreemapChart = echarts.init(document.getElementById('cityTreemapChart'));
+  subjectPolarChart = echarts.init(document.getElementById('subjectPolarChart'));
+  provinceScatterChart = echarts.init(document.getElementById('provinceScatterChart'));
   window.addEventListener('resize', function() {
-    mapChart.resize(); barChart.resize(); pieChart.resize();
+    [mapChart, rankLineChart, categoryBarChart, adminPieChart, majorFunnelChart,
+     cityTreemapChart, subjectPolarChart, provinceScatterChart].forEach(function(chart) {
+      if (chart) chart.resize();
+    });
   });
 
   // 统计头部
@@ -1149,8 +1319,13 @@ function applyFilters() {
   document.getElementById('statShown').textContent = data.length;
   document.getElementById('listCount').textContent = data.length;
   renderMap(data);
-  renderBar(data);
-  renderPie(data);
+  renderRankLine(data);
+  renderCategoryBar(data);
+  renderAdminPie(data);
+  renderMajorFunnel(data);
+  renderCityTreemap(data);
+  renderSubjectPolar(data);
+  renderProvinceScatter(data);
   renderTable(data);
   renderRankingStats(data);
 }
@@ -1204,36 +1379,42 @@ function renderMap(data) {
   });
 
   mapChart.setOption({
-    tooltip: {
+    textStyle: { fontFamily: DK_FONT },
+    tooltip: Object.assign({
       trigger: 'item',
       formatter: function(params) {
-        if (params.value) {
-          return params.name + '：<b>' + params.value + '</b> 所高校';
-        }
-        return params.name + '：无数据';
+        return params.name + '：<b>' + (params.value || 0) + '</b> 所高校';
       }
-    },
+    }, dkTooltip()),
     visualMap: {
       min: 0,
       max: Math.max.apply(null, mapData.map(d => d.value).concat([1])),
-      left: 20, bottom: 20,
+      left: 16, bottom: 16,
+      itemWidth: 11, itemHeight: 116,
+      calculable: false,
       text: ['多', '少'],
-      calculable: true,
-      inRange: { color: ['#e0f3ff', '#2a5298'] }
+      textStyle: { color: DK_TEXT, fontSize: 11, fontFamily: DK_FONT },
+      inRange: { color: ['#123055', '#1c4b86', '#2b6fc0', '#4c9be6', '#8fd6ff'] }
     },
     series: [{
       type: 'map',
       map: 'china',
       roam: false,
+      zoom: 1.16,
+      center: [104, 36],
       label: { show: false },
-      emphasis: {
-        label: { show: true, color: '#333' },
-        itemStyle: { areaColor: '#ffd666' }
-      },
       itemStyle: {
-        borderColor: '#fff',
-        borderWidth: 1
+        areaColor: '#0f213d',
+        borderColor: 'rgba(120,180,255,.3)',
+        borderWidth: 1,
+        shadowColor: 'rgba(52,211,255,.45)',
+        shadowBlur: 12
       },
+      emphasis: {
+        label: { show: true, color: '#04101f', fontSize: 11, fontWeight: 600 },
+        itemStyle: { areaColor: '#5ce1ff', borderColor: '#bff0ff', borderWidth: 1.4 }
+      },
+      select: { disabled: true },
       data: mapData
     }]
   });
@@ -1263,49 +1444,334 @@ function renderMap(data) {
   });
 }
 
-// ============ 柱状图 ============
-function renderBar(data) {
+// ============ 图表统一主题（深色大屏） ============
+var DK_FONT = '"Inter","Microsoft YaHei","PingFang SC",Arial,sans-serif';
+var DK_TEXT = '#9db0d2';
+var DK_AXIS = '#6b81a8';
+var DK_SPLIT = 'rgba(96,142,214,.12)';
+var DK_PALETTE = ['#34d3ff', '#4b8cff', '#9a7bff', '#2fe3b4', '#ffb057', '#ff7ab8', '#6ee7ff', '#8ba4ff', '#c7a4ff'];
+
+function dkTooltip() {
+  return {
+    backgroundColor: 'rgba(6,12,26,.94)',
+    borderColor: 'rgba(96,142,214,.4)',
+    borderWidth: 1,
+    padding: [9, 13],
+    textStyle: { color: '#e9f0fb', fontSize: 12, fontFamily: DK_FONT },
+    extraCssText: 'border-radius:10px;box-shadow:0 16px 40px -14px rgba(0,0,0,.9);'
+  };
+}
+
+function dkCatAxis(data, extra) {
+  var axis = {
+    type: 'category',
+    data: data,
+    axisLine: { lineStyle: { color: 'rgba(96,142,214,.25)' } },
+    axisTick: { show: false },
+    axisLabel: { color: DK_AXIS, fontSize: 11, fontFamily: DK_FONT }
+  };
+  return Object.assign(axis, extra || {});
+}
+
+function dkValAxis(extra) {
+  var axis = {
+    type: 'value',
+    minInterval: 1,
+    axisLine: { show: false },
+    axisTick: { show: false },
+    axisLabel: { color: DK_AXIS, fontSize: 11, fontFamily: DK_FONT },
+    splitLine: { lineStyle: { color: DK_SPLIT, type: 'dashed' } }
+  };
+  return Object.assign(axis, extra || {});
+}
+
+function dkGradient(from, to, horizontal) {
+  return {
+    type: 'linear',
+    x: 0, y: 0,
+    x2: horizontal ? 1 : 0,
+    y2: horizontal ? 0 : 1,
+    colorStops: [{ offset: 0, color: from }, { offset: 1, color: to }]
+  };
+}
+
+function dkLabel(color) {
+  return { show: true, color: color || '#7f93b8', fontSize: 11, fontFamily: DK_FONT };
+}
+
+function heatColor(ratio) {
+  var stops = [[27, 58, 107], [47, 111, 174], [73, 168, 209]];
+  var t = Math.max(0, Math.min(1, ratio)) * (stops.length - 1);
+  var i = Math.floor(t);
+  var f = t - i;
+  var a = stops[i];
+  var b = stops[Math.min(i + 1, stops.length - 1)];
+  var c = a.map(function(v, k) { return Math.round(v + (b[k] - v) * f); });
+  return 'rgb(' + c.join(',') + ')';
+}
+
+function dkLegendRight(countMap) {
+  return {
+    type: 'scroll', orient: 'vertical',
+    right: 0, top: 'middle',
+    itemWidth: 8, itemHeight: 8, icon: 'circle', itemGap: 7,
+    textStyle: { color: DK_TEXT, fontSize: 11, fontFamily: DK_FONT },
+    formatter: countMap ? function(name) { return name + '  ' + (countMap[name] || 0); } : undefined
+  };
+}
+
+function rankingNumber(value) {
+  var match = String(value || '').match(/\d+/);
+  return match ? Number(match[0]) : null;
+}
+
+// ============ 学校类别构成（横向条形图，完整展示全部分类） ============
+function renderCategoryBar(data) {
+  var counts = {};
+  data.forEach(function(d) {
+    var c = d.categoryName || '未知';
+    counts[c] = (counts[c] || 0) + 1;
+  });
+  // 升序排列：ECharts 类目轴自下而上，故最大值显示在最上方
+  var sorted = Object.entries(counts).sort(function(a, b) { return a[1] - b[1]; });
+  categoryBarChart.setOption({
+    textStyle: { fontFamily: DK_FONT },
+    tooltip: Object.assign({
+      trigger: 'axis',
+      axisPointer: { type: 'shadow', shadowStyle: { color: 'rgba(52,211,255,.06)' } },
+      formatter: function(params) {
+        var p = params[0];
+        return p.name + '：<b>' + p.value + '</b> 所高校';
+      }
+    }, dkTooltip()),
+    grid: { left: 58, right: 52, top: 8, bottom: 6 },
+    xAxis: dkValAxis(),
+    yAxis: dkCatAxis(sorted.map(function(d) { return d[0]; }), { axisLine: { show: false } }),
+    series: [{
+      type: 'bar',
+      data: sorted.map(function(d) { return d[1]; }),
+      barMaxWidth: 13,
+      itemStyle: { color: dkGradient('#6a4bd8', '#34d3ff', true), borderRadius: [0, 6, 6, 0] },
+      label: Object.assign(dkLabel('#a9c6ff'), { position: 'right', fontWeight: 600 })
+    }]
+  });
+}
+
+// ============ 高校数量 Top20 城市（矩形树图） ============
+function renderCityTreemap(data) {
   var cityCount = {};
   data.forEach(function(d) {
     if (d.cityName) cityCount[d.cityName] = (cityCount[d.cityName] || 0) + 1;
   });
   var sorted = Object.entries(cityCount).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 20);
-  barChart.setOption({
-    tooltip: { trigger: 'axis' },
-    grid: { left: 50, right: 20, top: 20, bottom: 60 },
-    xAxis: {
-      type: 'category',
-      data: sorted.map(d => d[0]),
-      axisLabel: { interval: 0, fontSize: 11, rotate: 45 }
-    },
-    yAxis: { type: 'value', minInterval: 1 },
+  cityTreemapChart.setOption({
+    textStyle: { fontFamily: DK_FONT },
+    tooltip: Object.assign({
+      trigger: 'item',
+      formatter: function(p) { return p.name + '：<b>' + p.value + '</b> 所高校'; }
+    }, dkTooltip()),
     series: [{
-      type: 'bar',
-      data: sorted.map(d => d[1]),
-      itemStyle: { color: '#2a5298', borderRadius: [4,4,0,0] },
-      barMaxWidth: 30
+      type: 'treemap',
+      roam: false,
+      nodeClick: false,
+      breadcrumb: { show: false },
+      left: 0, right: 0, top: 0, bottom: 0,
+      itemStyle: { borderColor: 'rgba(6,12,26,.92)', borderWidth: 2, gapWidth: 2 },
+      label: {
+        show: true, color: '#eaf4ff', fontSize: 11, fontWeight: 600, fontFamily: DK_FONT,
+        formatter: function(p) { return p.name + '\n' + p.value; }
+      },
+      upperLabel: { show: false },
+      emphasis: { itemStyle: { borderColor: 'rgba(52,211,255,.9)' } },
+      data: sorted.map(function(d) {
+        var maxV = sorted[0][1];
+        var minV = sorted[sorted.length - 1][1];
+        var ratio = maxV === minV ? 1 : (d[1] - minV) / (maxV - minV);
+        return { name: d[0], value: d[1], itemStyle: { color: heatColor(ratio) } };
+      })
     }]
   });
 }
 
-// ============ 饼图 ============
-function renderPie(data) {
-  var catCount = {};
+// ============ 主管部门分布（环形图） ============
+function renderAdminPie(data) {
+  var counts = {};
   data.forEach(function(d) {
-    var c = d.categoryName || '未知';
-    catCount[c] = (catCount[c] || 0) + 1;
+    var a = d.adminType || '未知';
+    counts[a] = (counts[a] || 0) + 1;
   });
-  var pieData = Object.entries(catCount).sort(function(a, b) { return b[1] - a[1]; });
-  pieChart.setOption({
-    tooltip: { trigger: 'item', formatter: '{b}：{c} 所（{d}%）' },
-    legend: { type: 'scroll', orient: 'vertical', right: 10, top: 'center', textStyle: { fontSize: 11 } },
+  var list = Object.entries(counts).sort(function(a, b) { return b[1] - a[1]; });
+  var countMap = {};
+  list.forEach(function(d) { countMap[d[0]] = d[1]; });
+  adminPieChart.setOption({
+    color: DK_PALETTE,
+    textStyle: { fontFamily: DK_FONT },
+    tooltip: Object.assign({ trigger: 'item', formatter: '{b}：{c} 所（{d}%）' }, dkTooltip()),
+    legend: dkLegendRight(countMap),
     series: [{
       type: 'pie',
-      radius: ['35%', '70%'],
-      center: ['40%', '50%'],
-      data: pieData.map(d => ({ name: d[0], value: d[1] })),
+      radius: ['36%', '72%'],
+      center: ['36%', '50%'],
+      minAngle: 6,
+      itemStyle: { borderColor: 'rgba(6,12,26,.85)', borderWidth: 1.5 },
       label: { show: false },
-      emphasis: { label: { show: true, fontSize: 13, fontWeight: 'bold' } }
+      emphasis: { scale: true, scaleSize: 6 },
+      data: list.map(function(d) { return { name: d[0], value: d[1] }; })
+    }]
+  });
+}
+
+// ============ 专业评级分布（漏斗图） ============
+function renderMajorFunnel(data) {
+  var counts = {};
+  data.forEach(function(d) {
+    (getRanking(d).bcmr || []).forEach(function(item) {
+      if (item.grade) counts[item.grade] = (counts[item.grade] || 0) + 1;
+    });
+  });
+  var grades = ['A+', 'A', 'B+', 'B'].filter(function(g) { return counts[g]; });
+  majorFunnelChart.setOption({
+    color: DK_PALETTE,
+    textStyle: { fontFamily: DK_FONT },
+    tooltip: Object.assign({ trigger: 'item', formatter: '{b}：{c} 条记录' }, dkTooltip()),
+    series: [{
+      type: 'funnel',
+      left: '8%', right: '8%', top: 8, bottom: 8,
+      sort: 'descending',
+      gap: 3,
+      minSize: '26%',
+      label: { position: 'inside', color: '#04101f', fontSize: 11, fontWeight: 600, formatter: '{b}  {c}' },
+      itemStyle: { borderWidth: 0, opacity: .92 },
+      emphasis: { label: { fontSize: 12 } },
+      data: grades.map(function(g) { return { name: g, value: counts[g] }; })
+    }]
+  });
+}
+
+// ============ 学科等级分布（极坐标柱状图） ============
+function renderSubjectPolar(data) {
+  var counts = {};
+  data.forEach(function(d) {
+    (getRanking(d).bcsr || []).forEach(function(item) {
+      if (item.level) counts[item.level] = (counts[item.level] || 0) + 1;
+    });
+  });
+  var levels = Object.keys(counts).sort(levelSort);
+  subjectPolarChart.setOption({
+    textStyle: { fontFamily: DK_FONT },
+    tooltip: Object.assign({ trigger: 'item', formatter: '{b}：{c} 条记录' }, dkTooltip()),
+    polar: { radius: ['24%', '68%'], center: ['50%', '52%'] },
+    angleAxis: {
+      type: 'category',
+      data: levels,
+      axisLine: { lineStyle: { color: 'rgba(96,142,214,.25)' } },
+      axisTick: { show: false },
+      axisLabel: { color: DK_AXIS, fontSize: 10, fontFamily: DK_FONT, margin: 8 }
+    },
+    radiusAxis: {
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: { show: false },
+      splitLine: { lineStyle: { color: DK_SPLIT, type: 'dashed' } }
+    },
+    series: [{
+      type: 'bar',
+      coordinateSystem: 'polar',
+      barMaxWidth: 14,
+      itemStyle: { color: dkGradient('#2fe3b4', '#34d3ff', false), borderRadius: [0, 0, 3, 3] },
+      data: levels.map(function(l) { return counts[l]; })
+    }]
+  });
+}
+
+function levelSort(a, b) {
+  var aIsRank = a.indexOf('名') !== -1 ? 0 : 1;
+  var bIsRank = b.indexOf('名') !== -1 ? 0 : 1;
+  if (aIsRank !== bIsRank) return aIsRank - bIsRank;
+  return (rankingNumber(a) || 0) - (rankingNumber(b) || 0);
+}
+
+// ============ 高校综合排名分段（折线面积图） ============
+function renderRankLine(data) {
+  var bands = { '前50': 0, '51-100': 0, '101-300': 0, '301-500': 0, '501名以后': 0 };
+  data.forEach(function(d) {
+    var item = getRanking(d).bcur || getRanking(d).bcvcr;
+    var rank = item ? rankingNumber(item.rank) : null;
+    if (rank === null) return;
+    if (rank <= 50) bands['前50']++;
+    else if (rank <= 100) bands['51-100']++;
+    else if (rank <= 300) bands['101-300']++;
+    else if (rank <= 500) bands['301-500']++;
+    else bands['501名以后']++;
+  });
+  var labels = Object.keys(bands);
+  rankLineChart.setOption({
+    textStyle: { fontFamily: DK_FONT },
+    tooltip: Object.assign({ trigger: 'axis' }, dkTooltip()),
+    grid: { left: 46, right: 26, top: 26, bottom: 24 },
+    xAxis: dkCatAxis(labels, { boundaryGap: false }),
+    yAxis: dkValAxis(),
+    series: [{
+      type: 'line',
+      smooth: true,
+      symbol: 'circle',
+      symbolSize: 7,
+      data: labels.map(function(l) { return bands[l]; }),
+      lineStyle: { width: 2.4, color: '#34d3ff', shadowBlur: 14, shadowColor: 'rgba(52,211,255,.6)' },
+      itemStyle: { color: '#06101f', borderColor: '#34d3ff', borderWidth: 2 },
+      label: Object.assign(dkLabel('#8fd6ff'), { position: 'top', fontWeight: 600 }),
+      areaStyle: {
+        color: {
+          type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+          colorStops: [
+            { offset: 0, color: 'rgba(52,211,255,.42)' },
+            { offset: 1, color: 'rgba(52,211,255,0)' }
+          ]
+        }
+      }
+    }]
+  });
+}
+
+// ============ 各省平均综合排名（散点图） ============
+function renderProvinceScatter(data) {
+  var sums = {}, counts = {};
+  data.forEach(function(d) {
+    var item = getRanking(d).bcur || getRanking(d).bcvcr;
+    var rank = item ? rankingNumber(item.rank) : null;
+    if (!d.provinceShort || rank === null) return;
+    sums[d.provinceShort] = (sums[d.provinceShort] || 0) + rank;
+    counts[d.provinceShort] = (counts[d.provinceShort] || 0) + 1;
+  });
+  var points = Object.keys(sums).map(function(p) {
+    return { name: p, value: [counts[p], Number((sums[p] / counts[p]).toFixed(1))] };
+  });
+  provinceScatterChart.setOption({
+    textStyle: { fontFamily: DK_FONT },
+    tooltip: Object.assign({
+      trigger: 'item',
+      formatter: function(params) {
+        return params.name + '<br/>高校数：' + params.value[0] + '<br/>平均排名：' + params.value[1];
+      }
+    }, dkTooltip()),
+    grid: { left: 58, right: 30, top: 14, bottom: 30 },
+    xAxis: dkValAxis({ name: '高校数', nameLocation: 'middle', nameGap: 20, nameTextStyle: { color: DK_AXIS, fontSize: 10, fontFamily: DK_FONT } }),
+    yAxis: dkValAxis({ inverse: true, name: '平均排名', nameLocation: 'middle', nameGap: 34, nameTextStyle: { color: DK_AXIS, fontSize: 10, fontFamily: DK_FONT } }),
+    series: [{
+      type: 'scatter',
+      data: points,
+      symbolSize: function(val) { return Math.max(9, Math.min(26, val[0] / 14)); },
+      itemStyle: {
+        color: dkGradient('#ffb057', '#ff7ab8', false),
+        shadowBlur: 12,
+        shadowColor: 'rgba(255,140,120,.5)'
+      },
+      label: {
+        show: true, position: 'right', color: '#8fa6c8', fontSize: 10, fontFamily: DK_FONT,
+        formatter: function(p) { return p.name; }
+      },
+      labelLayout: { hideOverlap: true },
+      emphasis: { scale: 1.4 }
     }]
   });
 }
