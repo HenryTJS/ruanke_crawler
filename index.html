@@ -4,8 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>中国高校数据可视化平台</title>
-<!-- ECharts CDN -->
-<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<!-- ECharts：优先加载本地文件，缺失时回退到 CDN -->
+<script src="echarts.min.js"></script>
+<script>
+  if (typeof echarts === 'undefined') {
+    document.write('<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"><\/script>');
+  }
+</script>
 <style>
   :root {
     --panel: rgba(26, 46, 84, .38);
@@ -1142,17 +1147,35 @@ function renderRankFilter(wrapId, key, codeNames) {
   panel.appendChild(list);
   wrap.appendChild(panel);
 
-  function childrenOf(code) {
-    return Object.keys(codeNames).filter(function(child) {
-      return child.length > code.length && child.indexOf(code) === 0 && child.length === code.length + (key === 'subject' ? 2 : 2);
-    }).sort();
-  }
+  // 预计算父子关系：父级 = 最长的严格前缀节点
+  // 专业代码长度不固定（6 位的 010101、7 位的 010103K、8 位的 020203TK），不能按固定长度差判断
+  var CODES = Object.keys(codeNames);
+  var CHILDREN = {};
+  var PARENT = {};
+  CODES.forEach(function(code) { CHILDREN[code] = []; });
+  CODES.forEach(function(child) {
+    var best = null;
+    CODES.forEach(function(parent) {
+      if (parent.length < child.length && child.indexOf(parent) === 0) {
+        if (!best || parent.length > best.length) best = parent;
+      }
+    });
+    PARENT[child] = best;
+    if (best) CHILDREN[best].push(child);
+  });
+  Object.keys(CHILDREN).forEach(function(code) { CHILDREN[code].sort(); });
+  var ROOTS = CODES.filter(function(code) { return !PARENT[code]; }).sort();
+
+  function childrenOf(code) { return CHILDREN[code] || []; }
 
   function leavesOf(code) {
-    var descendants = Object.keys(codeNames).filter(function(child) {
-      return child.indexOf(code) === 0 && child.length > code.length;
-    });
-    return descendants.filter(function(child) { return childrenOf(child).length === 0; });
+    var out = [];
+    (function walk(node) {
+      var kids = childrenOf(node);
+      if (!kids.length) { out.push(node); return; }
+      kids.forEach(walk);
+    })(code);
+    return out;
   }
 
   function branchMatches(code, kw) {
@@ -1182,9 +1205,7 @@ function renderRankFilter(wrapId, key, codeNames) {
       applyFilters();
     });
     list.appendChild(allRow);
-    var roots = Object.keys(codeNames).filter(function(code) {
-      return code.length === 2 && branchMatches(code, kw);
-    }).sort();
+    var roots = ROOTS.filter(function(code) { return branchMatches(code, kw); });
     roots.forEach(function(root) { renderNode(root, 0, kw); });
     if (!list.children.length) {
       var empty = document.createElement('div');

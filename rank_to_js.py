@@ -149,7 +149,8 @@ for ranking in RANKINGS.values():
             FILTER_TREE["subject"][code] = clean(item.get("title"))
     for item in ranking.get("bcmr", []):
         code = clean(item.get("code"))
-        if len(code) == 6 and code not in FILTER_TREE["major"]:
+        # 专业代码可能是 6 位，也可能带 K/T/TK 等后缀（7~9 位），需一并收录
+        if len(code) >= 6 and code[:4] in FILTER_TREE["major"] and code not in FILTER_TREE["major"]:
             FILTER_TREE["major"][code] = clean(item.get("title"))
 
 with open("ranking_data.js", "w", encoding="utf-8") as file:
