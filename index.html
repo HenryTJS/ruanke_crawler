@@ -124,11 +124,20 @@
     padding: 18px 26px 30px;
     display: grid;
     grid-template-columns: minmax(280px, 330px) minmax(0, 1fr) minmax(280px, 330px);
-    gap: 16px; align-items: start;
+    gap: 16px; align-items: stretch;
   }
-  .side-col { display: flex; flex-direction: column; gap: 16px; }
+  /* 地图两侧：两张图等分地图卡片高度（两者高度之和 = 地图卡片高度） */
+  .side-col { display: flex; flex-direction: column; gap: 16px; min-height: 0; }
+  .side-col > .panel { flex: 1 1 0; display: flex; flex-direction: column; min-height: 0; }
+  .side-col > .panel > div { flex: 1 1 auto; min-height: 0; width: 100%; }
   .center-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
   .screen-top { max-width: 1880px; margin: 0 auto; padding: 0 26px; }
+  /* 底部三个图表等高 */
+  .bottom-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
 
   /* ---------- 筛选区 ---------- */
   .filter-panel { margin-bottom: 16px; padding: 12px 16px 14px; }
@@ -245,12 +254,9 @@
   .ms-indent { width: 12px; flex-shrink: 0; font-size: 11px; color: #45577a; }
 
   /* ---------- 图表尺寸 ---------- */
-  #mapChart { width: 100%; height: 520px; }
-  #rankLineChart { width: 100%; height: 230px; }
-  #categoryBarChart { width: 100%; height: 340px; }
-  #adminPieChart, #majorFunnelChart { width: 100%; height: 240px; }
-  #cityTreemapChart { width: 100%; height: 300px; }
-  #subjectPolarChart, #provinceScatterChart { width: 100%; height: 220px; }
+  #mapChart { width: 100%; height: 660px; }
+  #cityTreemapChart, #levelStackChart, #rankBoxChart { width: 100%; height: 340px; }
+  /* 地图两侧的四个图表高度由 .side-col 的 flex 自动等分，无需固定高度 */
 
   /* ---------- 列表 ---------- */
   .list-panel { padding: 14px 16px 6px; }
@@ -394,6 +400,10 @@
   }
   @media (max-width: 1100px) {
     .screen { grid-template-columns: minmax(0, 1fr); padding: 14px 18px 24px; }
+    /* 单列堆叠时父容器无固定高度，侧栏图改为固定高度 */
+    .side-col > .panel { flex: 0 0 auto; }
+    .side-col > .panel > div { flex: none; height: 260px; }
+    .bottom-row { grid-template-columns: 1fr; }
     .screen-header { grid-template-columns: 1fr; gap: 14px; padding: 16px 18px 14px; }
     .screen-header h1 { font-size: 20px; letter-spacing: 3px; }
     .header-side, .header-side.right { justify-content: center; flex-wrap: wrap; }
@@ -483,7 +493,7 @@
   </div>
 </div>
 
-<!-- 大屏主区：地图居中，两侧环绕不同类型图表 -->
+<!-- 大屏主区：地图居中，两侧各两张图（两侧高度之和 = 地图卡片高度） -->
 <main class="screen">
   <div class="side-col">
     <div class="panel">
@@ -494,10 +504,6 @@
       <h3>主管部门分布 <span class="unit">环形图</span></h3>
       <div id="adminPieChart"></div>
     </div>
-    <div class="panel">
-      <h3>专业评级分布 <span class="unit">漏斗图</span></h3>
-      <div id="majorFunnelChart"></div>
-    </div>
   </div>
 
   <div class="center-col">
@@ -505,27 +511,37 @@
       <h3>各省高校数量分布 <span class="unit">点击省份可筛选</span></h3>
       <div id="mapChart"></div>
     </div>
-    <div class="panel">
-      <h3>高校综合排名分段 <span class="unit">折线面积图</span></h3>
-      <div id="rankLineChart"></div>
-    </div>
   </div>
 
   <div class="side-col">
     <div class="panel">
-      <h3>高校数量 Top 20 城市 <span class="unit">矩形树图</span></h3>
-      <div id="cityTreemapChart"></div>
+      <h3>专业评级分布 <span class="unit">漏斗图</span></h3>
+      <div id="majorFunnelChart"></div>
     </div>
     <div class="panel">
       <h3>学科等级分布 <span class="unit">极坐标柱状图</span></h3>
       <div id="subjectPolarChart"></div>
     </div>
-    <div class="panel">
-      <h3>各省平均综合排名 <span class="unit">散点图</span></h3>
-      <div id="provinceScatterChart"></div>
-    </div>
   </div>
 </main>
+
+<!-- 底部三个等高图表 -->
+<div class="screen-top">
+  <div class="bottom-row">
+    <div class="panel">
+      <h3>高校数量 Top 20 城市 <span class="unit">矩形树图</span></h3>
+      <div id="cityTreemapChart"></div>
+    </div>
+    <div class="panel">
+      <h3>各省高校层次构成 <span class="unit">堆积柱状图</span></h3>
+      <div id="levelStackChart"></div>
+    </div>
+    <div class="panel">
+      <h3>各省高校排名分布 <span class="unit">箱线图</span></h3>
+      <div id="rankBoxChart"></div>
+    </div>
+  </div>
+</div>
 
 <!-- 高校列表 -->
 <div class="screen-top">
@@ -597,8 +613,8 @@ var filters = {
   tag: [],
   keyword: ''
 };
-var mapChart, rankLineChart, categoryBarChart, adminPieChart, majorFunnelChart;
-var cityTreemapChart, subjectPolarChart, provinceScatterChart;
+var mapChart, levelStackChart, categoryBarChart, adminPieChart, majorFunnelChart;
+var cityTreemapChart, subjectPolarChart, rankBoxChart;
 var RANK_FILTER_EXPANDED = { subject: {}, major: {} };
 
 // 筛选维度配置：ms-wrap id -> filters 中的键名
@@ -659,25 +675,34 @@ function init() {
 
   // 初始化图表
   mapChart = echarts.init(document.getElementById('mapChart'));
-  rankLineChart = echarts.init(document.getElementById('rankLineChart'));
+  levelStackChart = echarts.init(document.getElementById('levelStackChart'));
   categoryBarChart = echarts.init(document.getElementById('categoryBarChart'));
   adminPieChart = echarts.init(document.getElementById('adminPieChart'));
   majorFunnelChart = echarts.init(document.getElementById('majorFunnelChart'));
   cityTreemapChart = echarts.init(document.getElementById('cityTreemapChart'));
   subjectPolarChart = echarts.init(document.getElementById('subjectPolarChart'));
-  provinceScatterChart = echarts.init(document.getElementById('provinceScatterChart'));
-  window.addEventListener('resize', function() {
-    [mapChart, rankLineChart, categoryBarChart, adminPieChart, majorFunnelChart,
-     cityTreemapChart, subjectPolarChart, provinceScatterChart].forEach(function(chart) {
-      if (chart) chart.resize();
-    });
-  });
+  rankBoxChart = echarts.init(document.getElementById('rankBoxChart'));
+  window.addEventListener('resize', resizeAllCharts);
 
   // 统计头部
   document.getElementById('statTotal').textContent = allData.length;
   document.getElementById('statProv').textContent = unique(allData.map(d => d.provinceShort)).filter(Boolean).length;
 
   applyFilters();
+
+  // 侧栏图表高度由 flex 撑开，布局完成后再校正一次尺寸
+  setTimeout(resizeAllCharts, 0);
+}
+
+function chartList() {
+  return [mapChart, categoryBarChart, adminPieChart, majorFunnelChart,
+          subjectPolarChart, cityTreemapChart, levelStackChart, rankBoxChart];
+}
+
+function resizeAllCharts() {
+  chartList().forEach(function(chart) {
+    if (chart) chart.resize();
+  });
 }
 
 function unique(arr) { return Array.from(new Set(arr)); }
@@ -1340,13 +1365,13 @@ function applyFilters() {
   document.getElementById('statShown').textContent = data.length;
   document.getElementById('listCount').textContent = data.length;
   renderMap(data);
-  renderRankLine(data);
+  renderLevelStack(data);
   renderCategoryBar(data);
   renderAdminPie(data);
   renderMajorFunnel(data);
   renderCityTreemap(data);
   renderSubjectPolar(data);
-  renderProvinceScatter(data);
+  renderRankBox(data);
   renderTable(data);
   renderRankingStats(data);
 }
@@ -1712,87 +1737,97 @@ function levelSort(a, b) {
   return (rankingNumber(a) || 0) - (rankingNumber(b) || 0);
 }
 
-// ============ 高校综合排名分段（折线面积图） ============
-function renderRankLine(data) {
-  var bands = { '前50': 0, '51-100': 0, '101-300': 0, '301-500': 0, '501名以后': 0 };
+// ============ 各省高校层次构成（堆积柱状图） ============
+function renderLevelStack(data) {
+  var groups = ['双一流', '专科', '地方公办', '民办高校', '独立学院'];
+  var provTotal = {};
   data.forEach(function(d) {
-    var item = getRanking(d).bcur || getRanking(d).bcvcr;
-    var rank = item ? rankingNumber(item.rank) : null;
-    if (rank === null) return;
-    if (rank <= 50) bands['前50']++;
-    else if (rank <= 100) bands['51-100']++;
-    else if (rank <= 300) bands['101-300']++;
-    else if (rank <= 500) bands['301-500']++;
-    else bands['501名以后']++;
+    if (d.provinceShort) provTotal[d.provinceShort] = (provTotal[d.provinceShort] || 0) + 1;
   });
-  var labels = Object.keys(bands);
-  rankLineChart.setOption({
+  var provs = Object.keys(provTotal).sort(function(a, b) { return provTotal[b] - provTotal[a]; });
+  var all = groups.concat(['其他']);
+  var matrix = {};
+  all.forEach(function(g) { matrix[g] = {}; });
+  data.forEach(function(d) {
+    if (!d.provinceShort) return;
+    var g = groups.indexOf(d.level) !== -1 ? d.level : '其他';
+    matrix[g][d.provinceShort] = (matrix[g][d.provinceShort] || 0) + 1;
+  });
+  levelStackChart.setOption({
+    color: ['#34d3ff', '#4b8cff', '#9a7bff', '#2fe3b4', '#ffb057', '#6b81a8'],
     textStyle: { fontFamily: DK_FONT },
-    tooltip: Object.assign({ trigger: 'axis' }, dkTooltip()),
-    grid: { left: 46, right: 26, top: 26, bottom: 24 },
-    xAxis: dkCatAxis(labels, { boundaryGap: false }),
+    tooltip: Object.assign({
+      trigger: 'axis',
+      axisPointer: { type: 'shadow', shadowStyle: { color: 'rgba(52,211,255,.06)' } }
+    }, dkTooltip()),
+    legend: {
+      type: 'scroll', bottom: 0, itemWidth: 8, itemHeight: 8,
+      icon: 'circle', itemGap: 12,
+      textStyle: { color: DK_TEXT, fontSize: 11, fontFamily: DK_FONT }
+    },
+    grid: { left: 46, right: 20, top: 12, bottom: 46 },
+    xAxis: dkCatAxis(provs, { axisLabel: { color: DK_AXIS, fontSize: 10, fontFamily: DK_FONT } }),
     yAxis: dkValAxis(),
-    series: [{
-      type: 'line',
-      smooth: true,
-      symbol: 'circle',
-      symbolSize: 7,
-      data: labels.map(function(l) { return bands[l]; }),
-      lineStyle: { width: 2.4, color: '#34d3ff', shadowBlur: 14, shadowColor: 'rgba(52,211,255,.6)' },
-      itemStyle: { color: '#06101f', borderColor: '#34d3ff', borderWidth: 2 },
-      label: Object.assign(dkLabel('#8fd6ff'), { position: 'top', fontWeight: 600 }),
-      areaStyle: {
-        color: {
-          type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
-          colorStops: [
-            { offset: 0, color: 'rgba(52,211,255,.42)' },
-            { offset: 1, color: 'rgba(52,211,255,0)' }
-          ]
-        }
-      }
-    }]
+    series: all.map(function(g) {
+      return {
+        name: g, type: 'bar', stack: 'total', barMaxWidth: 26,
+        data: provs.map(function(p) { return matrix[g][p] || 0; }),
+        itemStyle: { borderWidth: 0 }
+      };
+    })
   });
 }
 
-// ============ 各省平均综合排名（散点图） ============
-function renderProvinceScatter(data) {
-  var sums = {}, counts = {};
+// ============ 各省高校排名分布（箱线图） ============
+function rankQuantiles(values) {
+  var a = values.slice().sort(function(x, y) { return x - y; });
+  function q(f) {
+    var pos = (a.length - 1) * f;
+    var base = Math.floor(pos);
+    var rest = pos - base;
+    return a[base + 1] !== undefined ? a[base] + rest * (a[base + 1] - a[base]) : a[base];
+  }
+  return [a[0], q(0.25), q(0.5), q(0.75), a[a.length - 1]];
+}
+
+function renderRankBox(data) {
+  var byProv = {};
   data.forEach(function(d) {
     var item = getRanking(d).bcur || getRanking(d).bcvcr;
     var rank = item ? rankingNumber(item.rank) : null;
     if (!d.provinceShort || rank === null) return;
-    sums[d.provinceShort] = (sums[d.provinceShort] || 0) + rank;
-    counts[d.provinceShort] = (counts[d.provinceShort] || 0) + 1;
+    (byProv[d.provinceShort] = byProv[d.provinceShort] || []).push(rank);
   });
-  var points = Object.keys(sums).map(function(p) {
-    return { name: p, value: [counts[p], Number((sums[p] / counts[p]).toFixed(1))] };
+  var provs = Object.keys(byProv).sort(function(a, b) { return byProv[b].length - byProv[a].length; });
+  var boxData = provs.map(function(p) {
+    return rankQuantiles(byProv[p]).map(function(v) { return Number(v.toFixed(1)); });
   });
-  provinceScatterChart.setOption({
+  rankBoxChart.setOption({
     textStyle: { fontFamily: DK_FONT },
     tooltip: Object.assign({
       trigger: 'item',
-      formatter: function(params) {
-        return params.name + '<br/>高校数：' + params.value[0] + '<br/>平均排名：' + params.value[1];
+      formatter: function(p) {
+        var v = (p.data && p.data.length >= 5) ? p.data.slice(-5) : p.value.slice(-5);
+        return p.name + '<br/>最小 ' + v[0] + ' · 最大 ' + v[4] +
+               '<br/>Q1 ' + v[1] + ' · 中位 ' + v[2] + ' · Q3 ' + v[3];
       }
     }, dkTooltip()),
-    grid: { left: 58, right: 30, top: 14, bottom: 30 },
-    xAxis: dkValAxis({ name: '高校数', nameLocation: 'middle', nameGap: 20, nameTextStyle: { color: DK_AXIS, fontSize: 10, fontFamily: DK_FONT } }),
-    yAxis: dkValAxis({ inverse: true, name: '平均排名', nameLocation: 'middle', nameGap: 34, nameTextStyle: { color: DK_AXIS, fontSize: 10, fontFamily: DK_FONT } }),
+    grid: { left: 52, right: 18, top: 14, bottom: 58 },
+    xAxis: dkCatAxis(provs, { axisLabel: { color: DK_AXIS, fontSize: 10, rotate: 42, fontFamily: DK_FONT } }),
+    yAxis: {
+      type: 'log', inverse: true, min: 1,
+      name: '排名', nameLocation: 'middle', nameGap: 34,
+      nameTextStyle: { color: DK_AXIS, fontSize: 10, fontFamily: DK_FONT },
+      axisLine: { show: false }, axisTick: { show: false },
+      axisLabel: { color: DK_AXIS, fontSize: 10, fontFamily: DK_FONT },
+      splitLine: { lineStyle: { color: DK_SPLIT, type: 'dashed' } }
+    },
     series: [{
-      type: 'scatter',
-      data: points,
-      symbolSize: function(val) { return Math.max(9, Math.min(26, val[0] / 14)); },
-      itemStyle: {
-        color: dkGradient('#ffb057', '#ff7ab8', false),
-        shadowBlur: 12,
-        shadowColor: 'rgba(255,140,120,.5)'
-      },
-      label: {
-        show: true, position: 'right', color: '#8fa6c8', fontSize: 10, fontFamily: DK_FONT,
-        formatter: function(p) { return p.name; }
-      },
-      labelLayout: { hideOverlap: true },
-      emphasis: { scale: 1.4 }
+      type: 'boxplot',
+      data: boxData,
+      boxWidth: [8, 22],
+      itemStyle: { color: 'rgba(52,211,255,.16)', borderColor: '#34d3ff', borderWidth: 1.4 },
+      emphasis: { itemStyle: { borderColor: '#8fd6ff', borderWidth: 2, color: 'rgba(52,211,255,.3)' } }
     }]
   });
 }
