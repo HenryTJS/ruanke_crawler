@@ -16,12 +16,12 @@ rr = [
 
 ry = [
     [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026],
-    [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025],
+    [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026],
     [2021, 2022, 2023, 2024, 2025, 2026],
     [2023, 2024, 2025, 2026],
     [2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026],
     [2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026],
-    [2016, 2017, 2018, 2020, 2021, 2022, 2023, 2024, 2025, 2026]
+    [2016, 2017, 2018, 2020, 2021, 2022, 2023, 2024, 2025]
 ]
 
 rc = [r'data:\[(.*?)\],', r'data:\[(.*?)\],', r'\{(.*?)return', r'data:\[(.*?)\],', None,  r'data:\[(.*?)\],', None]
@@ -154,7 +154,7 @@ if __name__ == "__main__":
                 print(f"错误：年份 {year_input} 不在可用年份列表中: {ry[type_arg]}")
                 continue
             else:
-                url = "https://www.shanghairanking.cn/_nuxt/static/1789466132/rankings/" + rv[type_arg] + f"/{year_input}/payload.js"
+                url = "https://www.shanghairanking.cn/_nuxt/static/1791967957/rankings/" + rv[type_arg] + f"/{year_input}/payload.js"
                 headers = {
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0",
                     "Referer": "https://www.shanghairanking.cn/institution/huazhong-university-of-science-and-technology",
